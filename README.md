@@ -15,7 +15,7 @@ Funcionalidades:
 
 - cadastrar produto (código, nome, categoria, quantidade e preço);
 - consultar produto pelo código;
-- exportar os produtos ativos para `produtos.txt`;
+- exportar todos os registros para `produtos.txt`, com o status de cada um (ATIVO ou EXCLUIDO);
 - excluir produto por **exclusão lógica**: o registro continua no arquivo, só muda o campo `status` de `'A'` (ativo) para `'E'` (excluído);
 - mostrar no menu quantos produtos ativos existem.
 

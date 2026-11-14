@@ -208,10 +208,15 @@ void consultarProduto(void) {
     fclose(fp);
 }
 
+/*
+ * Exporta TODOS os registros gravados para o arquivo texto,
+ * com uma coluna de status (ATIVO ou EXCLUIDO).
+ * O valor do estoque soma apenas os produtos ativos.
+ */
 void exportarTxt(void) {
     FILE *fp, *txt;
     Produto p;
-    int qtd = 0;
+    int ativos = 0, excluidos = 0;
     float valorEstoque = 0;
 
     printf("\n=== EXPORTAR PARA TXT ===\n");
@@ -228,25 +233,32 @@ void exportarTxt(void) {
     }
 
     fprintf(txt, "RELATORIO DE ESTOQUE DE PRODUTOS\n");
-    fprintf(txt, "==================================================================================\n");
-    fprintf(txt, "%-8s %-30s %-20s %8s %12s\n", "CODIGO", "NOME", "CATEGORIA", "QTD", "PRECO (R$)");
-    fprintf(txt, "----------------------------------------------------------------------------------\n");
+    fprintf(txt, "============================================================================================\n");
+    fprintf(txt, "%-8s %-30s %-20s %8s %12s  %-8s\n", "CODIGO", "NOME", "CATEGORIA", "QTD", "PRECO (R$)", "STATUS");
+    fprintf(txt, "--------------------------------------------------------------------------------------------\n");
 
     while (fread(&p, sizeof(Produto), 1, fp) == 1) {
-        if (p.status != STATUS_ATIVO) continue;
-        fprintf(txt, "%-8d %-30.30s %-20.20s %8d %12.2f\n",
-                p.codigo, p.nome, p.categoria, p.quantidade, p.preco);
-        valorEstoque += p.quantidade * p.preco;
-        qtd++;
+        fprintf(txt, "%-8d %-30.30s %-20.20s %8d %12.2f  %-8s\n",
+                p.codigo, p.nome, p.categoria, p.quantidade, p.preco,
+                p.status == STATUS_ATIVO ? "ATIVO" : "EXCLUIDO");
+        if (p.status == STATUS_ATIVO) {
+            valorEstoque += p.quantidade * p.preco;
+            ativos++;
+        } else {
+            excluidos++;
+        }
     }
 
-    fprintf(txt, "----------------------------------------------------------------------------------\n");
-    fprintf(txt, "Total de produtos ativos: %d\n", qtd);
-    fprintf(txt, "Valor total em estoque : R$ %.2f\n", valorEstoque);
+    fprintf(txt, "--------------------------------------------------------------------------------------------\n");
+    fprintf(txt, "Total de registros     : %d\n", ativos + excluidos);
+    fprintf(txt, "Produtos ativos        : %d\n", ativos);
+    fprintf(txt, "Produtos excluidos     : %d\n", excluidos);
+    fprintf(txt, "Valor total em estoque : R$ %.2f (somente ativos)\n", valorEstoque);
 
     fclose(txt);
     fclose(fp);
-    printf("%d produto(s) exportado(s) para o arquivo \"%s\".\n", qtd, ARQ_TEXTO);
+    printf("%d registro(s) exportado(s) para o arquivo \"%s\" (%d ativo(s), %d excluido(s)).\n",
+           ativos + excluidos, ARQ_TEXTO, ativos, excluidos);
 }
 
 void excluirProduto(void) {

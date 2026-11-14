@@ -32,7 +32,7 @@ Como guardamos cada produto · Como funciona o produtos.dat · As funções · C
 - `fopen` com `"rb+"` (ler e gravar) e `"wb+"` (criar na primeira vez).
 - As funções: `cadastrarProduto`, `consultarProduto`, `exportarTxt`, `excluirProduto`, `contarAtivos` e as de leitura (`lerTexto`, `lerInteiro`, `lerReal`).
 - Exclusão lógica: acha a posição, troca o status de `'A'` para `'E'`, `fseek` e `fwrite` regravam só aquele registro.
-- Exportação: `"w"` cria o TXT, `continue` pula os excluídos, `%-8d` e `%-30.30s` alinham as colunas.
+- Exportação: `"w"` cria o TXT com **todos** os registros e uma coluna STATUS (ATIVO ou EXCLUIDO); `%-8d` e `%-30.30s` alinham as colunas; o valor do estoque soma só os ativos.
 
 **Demo:** opção 1, cadastrar dois produtos, errando de propósito:
 
@@ -60,7 +60,7 @@ Testes que fizemos · Demonstração ao vivo · O que o site tem a mais · Como 
 1. Opção 4, excluir o `102` e responder `N`: "Exclusao cancelada".
 2. Opção 4 de novo, excluir o `102` e responder `S`. O menu mostra **1 ativo (2 gravados)**: o registro continua no arquivo.
 3. Opção 2, consultar o `102`: "nao encontrado".
-4. Opção 3, exportar, e abrir o `produtos.txt` no Bloco de Notas: só aparece o 101.
+4. Opção 3, exportar, e abrir o `produtos.txt` no Bloco de Notas: aparecem os dois, o 102 marcado como EXCLUIDO e fora do valor do estoque.
 5. Opção 0 para sair, abrir o programa de novo e mostrar que o menu continua com 1 ativo e 2 gravados.
 
 ### Victor Hugo de Sousa Ananias: o site e o 3D (slides 20 a 27)
@@ -96,7 +96,7 @@ Programa compilado com `gcc -Wall -Wextra -std=c99`: **nenhum erro e nenhum avis
 | 10 | Excluir e responder `N` | "Exclusao cancelada" |
 | 11 | Excluir e responder `S` | Ativos caem, gravados continuam |
 | 12 | Consultar produto excluído | "nao encontrado" |
-| 13 | Exportar TXT | Só os ativos, com total e valor do estoque |
+| 13 | Exportar TXT | Todos os registros, com status; valor do estoque só dos ativos |
 | 14 | Tamanho do `produtos.dat` com 3 registros | 288 bytes (3 × 96) |
 | 15 | Opção inválida no menu (`9`) | "Opcao invalida" |
 | 16 | Fechar e abrir o programa de novo | Os dados continuam |
@@ -133,7 +133,7 @@ O `"rb+"` abre um arquivo que já existe para ler e gravar. O `"wb+"` cria o arq
 O `fgets` lê a linha inteira com limite de tamanho, então não estoura o vetor nem deixa lixo no buffer. O `strtol` diz se sobrou alguma letra, e aí pedimos de novo.
 
 **Como vocês provaram que a exclusão lógica funciona?**
-Depois de excluir, o menu mostra 1 ativo e 2 gravados: o registro continua no arquivo. A consulta responde "não encontrado" e o TXT não lista o excluído.
+Depois de excluir, o menu mostra 1 ativo e 2 gravados: o registro continua no arquivo. A consulta responde "não encontrado" e, no TXT, ele aparece marcado como EXCLUIDO.
 
 **Como o programa conta os produtos ativos?**
 A função `contarAtivos` lê o arquivo do começo ao fim com `fread` e soma os registros com status `'A'`. O total gravado vem do tamanho do arquivo (`ftell`) dividido por 96.

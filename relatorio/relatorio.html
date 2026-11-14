@@ -169,7 +169,7 @@ foi atendida no programa em C e na aplicação visual.</p>
   <tr><th style="width:22%">Requisito</th><th style="width:43%">Programa em C (<code>estoque.c</code>)</th><th>Aplicação visual (<code>estoque.html</code>)</th></tr>
   <tr><td>Cadastrar registros</td><td>Função <code>cadastrarProduto()</code>: lê código, nome, categoria, quantidade e preço, impede código repetido e grava no fim de <code>produtos.dat</code>.</td><td>Botão “+ Novo produto” ou vaga “+” no depósito 3D; campos extras de fornecedor, unidade, estoque mínimo e validade.</td></tr>
   <tr><td>Consultar por código</td><td>Função <code>consultarProduto()</code>, que usa <code>buscarPorCodigo()</code> para percorrer o arquivo e exibe todos os dados e o valor total.</td><td>Campo “Código” + “Consultar” no topo; abre a ficha do produto com histórico e destaca o palete no 3D.</td></tr>
-  <tr><td>Exportar para TXT</td><td>Função <code>exportarTxt()</code>: cria <code>produtos.txt</code> com tabela formatada, total de produtos e valor do estoque.</td><td>Botão “Exportar relatório TXT”: baixa <code>estoque.txt</code> com todos os campos e marcações de estoque baixo e vencimento.</td></tr>
+  <tr><td>Exportar para TXT</td><td>Função <code>exportarTxt()</code>: cria <code>produtos.txt</code> com todos os registros em tabela formatada, status de cada um, totais e valor do estoque.</td><td>Botão “Exportar relatório TXT”: baixa <code>estoque.txt</code> com todos os campos e marcações de estoque baixo e vencimento.</td></tr>
   <tr><td>Excluir (exclusão lógica)</td><td>Função <code>excluirProduto()</code>: troca o campo <code>status</code> de <code>'A'</code> para <code>'E'</code> e regrava o registro no mesmo lugar com <code>fseek</code>.</td><td>Botão de lixeira: o produto recebe status “E” e vai para a aba “Excluídos”, de onde pode ser restaurado.</td></tr>
   <tr><td>Contabilizar registros</td><td>Função <code>contarAtivos()</code>, chamada a cada exibição do menu, que mostra também o total gravado no arquivo.</td><td>Indicador “Produtos ativos” no topo, com o número de excluídos e o total.</td></tr>
 </table>
@@ -284,17 +284,22 @@ categoria, quantidade, preço unitário e o <b>valor total</b> (quantidade × pr
 não foi encontrado.</p>
 
 <h2>5.6 Exportar para arquivo texto (TXT)</h2>
-<p>A função <code>exportarTxt()</code> lê todos os registros do arquivo binário e escreve no arquivo <code>produtos.txt</code>
-somente os ativos, em forma de tabela com colunas alinhadas. As larguras fixas do <code>fprintf</code>
-(<code>%-8d</code>, <code>%-30.30s</code>, <code>%12.2f</code>) alinham as colunas e cortam textos muito longos, deixando o
-relatório legível em qualquer editor (Bloco de Notas, por exemplo). No final são escritos o total de produtos ativos e o
-valor total do estoque.</p>
+<p>A função <code>exportarTxt()</code> lê todos os registros do arquivo binário e escreve <b>todos</b> no arquivo
+<code>produtos.txt</code>, em forma de tabela com colunas alinhadas e uma coluna <code>STATUS</code> que indica se o registro
+está ATIVO ou EXCLUIDO. As larguras fixas do <code>fprintf</code> (<code>%-8d</code>, <code>%-30.30s</code>, <code>%12.2f</code>)
+alinham as colunas e cortam textos muito longos, deixando o relatório legível em qualquer editor (Bloco de Notas, por exemplo).
+No final são escritos o total de registros, quantos estão ativos e excluídos e o valor total do estoque, que soma apenas os
+ativos.</p>
 <pre><span class="k">while</span> (fread(&amp;p, <span class="k">sizeof</span>(Produto), 1, fp) == 1) {
-    <span class="k">if</span> (p.status != STATUS_ATIVO) <span class="k">continue</span>;           <span class="c">/* ignora excluídos */</span>
-    fprintf(txt, <span class="s">"%-8d %-30.30s %-20.20s %8d %12.2f\n"</span>,
-            p.codigo, p.nome, p.categoria, p.quantidade, p.preco);
-    valorEstoque += p.quantidade * p.preco;
-    qtd++;
+    fprintf(txt, <span class="s">"%-8d %-30.30s %-20.20s %8d %12.2f  %-8s\n"</span>,
+            p.codigo, p.nome, p.categoria, p.quantidade, p.preco,
+            p.status == STATUS_ATIVO ? <span class="s">"ATIVO"</span> : <span class="s">"EXCLUIDO"</span>);
+    <span class="k">if</span> (p.status == STATUS_ATIVO) {
+        valorEstoque += p.quantidade * p.preco;
+        ativos++;
+    } <span class="k">else</span> {
+        excluidos++;
+    }
 }</pre>
 
 <h2>5.7 Excluir registros (exclusão lógica)</h2>
@@ -318,8 +323,8 @@ daquele registro com <code>fseek</code> e regrava somente ele:</p>
   <code>fseek</code> posiciona o ponteiro no byte 2 × 96 = 192. O <code>fwrite</code> sobrescreve apenas esses 96 bytes,
   agora com <code>status = 'E'</code>. Os demais registros não são tocados.</p>
 </div>
-<p>Depois da exclusão, o produto deixa de aparecer na consulta, no relatório TXT e na contagem de ativos, mas continua
-contado no total gravado no arquivo, como mostra a seção seguinte.</p>
+<p>Depois da exclusão, o produto deixa de aparecer na consulta e na contagem de ativos e passa a constar como EXCLUIDO no
+relatório TXT, mas continua contado no total gravado no arquivo, como mostra a seção seguinte.</p>
 
 <h2>5.8 Contabilizar registros</h2>
 <p>Duas funções fazem a contagem que aparece no cabeçalho do menu:</p>
@@ -376,15 +381,19 @@ Valor total: R$ 298.80
 Confirma a exclusao? (S/N): Produto excluido com sucesso.
 
  Produtos ativos: 1  (gravados no arquivo: 2)</pre>
-<p>Em seguida, a opção 3 gerou o arquivo <code>produtos.txt</code>. O produto excluído não aparece no relatório:</p>
-<pre class="terminal">RELATORIO DE ESTOQUE DE PRODUTOS
-==================================================================================
-CODIGO   NOME                           CATEGORIA                 QTD   PRECO (R$)
-----------------------------------------------------------------------------------
-101      Arroz tipo 1 5kg               Alimentos                  48        27.90
-----------------------------------------------------------------------------------
-Total de produtos ativos: 1
-Valor total em estoque : R$ 1339.20</pre>
+<p>Em seguida, a opção 3 gerou o arquivo <code>produtos.txt</code>. Os dois registros aparecem, e o excluído vem marcado
+como EXCLUIDO e não entra no valor do estoque:</p>
+<pre class="terminal" style="font-size:7.6pt">RELATORIO DE ESTOQUE DE PRODUTOS
+============================================================================================
+CODIGO   NOME                           CATEGORIA                 QTD   PRECO (R$)  STATUS
+--------------------------------------------------------------------------------------------
+101      Arroz tipo 1 5kg               Alimentos                  48        27.90  ATIVO
+201      Detergente neutro 500mL        Limpeza                   120         2.49  EXCLUIDO
+--------------------------------------------------------------------------------------------
+Total de registros     : 2
+Produtos ativos        : 1
+Produtos excluidos     : 1
+Valor total em estoque : R$ 1339.20 (somente ativos)</pre>
 
 <!-- ================= 6 APLICAÇÃO VISUAL ================= -->
 <h1 class="nova">6 Aplicação com interface visual</h1>
@@ -549,7 +558,7 @@ mostra um aviso no lugar do depósito, e todas as outras funções continuam fun
   <tr><td>Preço com vírgula (27,90) e com ponto (2.49)</td><td>Os dois formatos foram aceitos corretamente.</td></tr>
   <tr><td>Consultar código existente e inexistente</td><td>Exibiu todos os dados no primeiro caso e “nao encontrado” no segundo.</td></tr>
   <tr><td>Excluir produto (exclusão lógica)</td><td>Ativos caiu de 2 para 1 e o total gravado continuou 2; o produto não aparece mais na consulta.</td></tr>
-  <tr><td>Exportar TXT após exclusão</td><td>Relatório gerado só com o produto ativo e com os totais corretos.</td></tr>
+  <tr><td>Exportar TXT após exclusão</td><td>Relatório gerado com todos os registros, o excluído marcado como EXCLUIDO e o valor do estoque somando só os ativos.</td></tr>
   <tr><td>App visual: dados após recarregar a página</td><td>Todos os produtos e movimentações continuaram salvos.</td></tr>
   <tr><td>App visual: saída maior que o estoque</td><td>Bloqueada com “Estoque insuficiente”.</td></tr>
   <tr><td>App visual: excluir e restaurar</td><td>Produto foi para “Excluídos” e voltou à lista ao restaurar.</td></tr>
@@ -791,10 +800,15 @@ void consultarProduto(void) {
     fclose(fp);
 }
 
+/*
+ * Exporta TODOS os registros gravados para o arquivo texto,
+ * com uma coluna de status (ATIVO ou EXCLUIDO).
+ * O valor do estoque soma apenas os produtos ativos.
+ */
 void exportarTxt(void) {
     FILE *fp, *txt;
     Produto p;
-    int qtd = 0;
+    int ativos = 0, excluidos = 0;
     float valorEstoque = 0;
 
     printf("\n=== EXPORTAR PARA TXT ===\n");
@@ -811,25 +825,32 @@ void exportarTxt(void) {
     }
 
     fprintf(txt, "RELATORIO DE ESTOQUE DE PRODUTOS\n");
-    fprintf(txt, "==================================================================================\n");
-    fprintf(txt, "%-8s %-30s %-20s %8s %12s\n", "CODIGO", "NOME", "CATEGORIA", "QTD", "PRECO (R$)");
-    fprintf(txt, "----------------------------------------------------------------------------------\n");
+    fprintf(txt, "============================================================================================\n");
+    fprintf(txt, "%-8s %-30s %-20s %8s %12s  %-8s\n", "CODIGO", "NOME", "CATEGORIA", "QTD", "PRECO (R$)", "STATUS");
+    fprintf(txt, "--------------------------------------------------------------------------------------------\n");
 
     while (fread(&amp;p, sizeof(Produto), 1, fp) == 1) {
-        if (p.status != STATUS_ATIVO) continue;
-        fprintf(txt, "%-8d %-30.30s %-20.20s %8d %12.2f\n",
-                p.codigo, p.nome, p.categoria, p.quantidade, p.preco);
-        valorEstoque += p.quantidade * p.preco;
-        qtd++;
+        fprintf(txt, "%-8d %-30.30s %-20.20s %8d %12.2f  %-8s\n",
+                p.codigo, p.nome, p.categoria, p.quantidade, p.preco,
+                p.status == STATUS_ATIVO ? "ATIVO" : "EXCLUIDO");
+        if (p.status == STATUS_ATIVO) {
+            valorEstoque += p.quantidade * p.preco;
+            ativos++;
+        } else {
+            excluidos++;
+        }
     }
 
-    fprintf(txt, "----------------------------------------------------------------------------------\n");
-    fprintf(txt, "Total de produtos ativos: %d\n", qtd);
-    fprintf(txt, "Valor total em estoque : R$ %.2f\n", valorEstoque);
+    fprintf(txt, "--------------------------------------------------------------------------------------------\n");
+    fprintf(txt, "Total de registros     : %d\n", ativos + excluidos);
+    fprintf(txt, "Produtos ativos        : %d\n", ativos);
+    fprintf(txt, "Produtos excluidos     : %d\n", excluidos);
+    fprintf(txt, "Valor total em estoque : R$ %.2f (somente ativos)\n", valorEstoque);
 
     fclose(txt);
     fclose(fp);
-    printf("%d produto(s) exportado(s) para o arquivo \"%s\".\n", qtd, ARQ_TEXTO);
+    printf("%d registro(s) exportado(s) para o arquivo \"%s\" (%d ativo(s), %d excluido(s)).\n",
+           ativos + excluidos, ARQ_TEXTO, ativos, excluidos);
 }
 
 void excluirProduto(void) {
