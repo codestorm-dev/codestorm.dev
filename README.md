@@ -23,10 +23,12 @@ Os dados ficam no arquivo binário `produtos.dat`, criado na primeira execução
 
 ### Como compilar e rodar
 
-Com o GCC (MinGW, Dev-C++ ou Linux):
+No Windows, é só dar dois cliques no **`compilar.bat`**: ele compila e já abre o programa (precisa do Dev-C++ ou do gcc instalado).
+
+Ou pelo terminal, com o GCC (MinGW, Dev-C++ ou Linux):
 
 ```bash
-gcc estoque.c -o estoque
+gcc -Wall -Wextra -std=c99 -o estoque estoque.c
 ./estoque
 ```
 
@@ -46,6 +48,10 @@ Também dá para baixar e abrir o arquivo direto no navegador, sem instalar nada
 - exportação em TXT e backup em JSON.
 
 Os dados ficam salvos no próprio navegador (`localStorage`). A cena 3D carrega o Three.js pela internet, então precisa de conexão para aparecer.
+
+## Apresentação
+
+O roteiro de quem apresenta o quê, a demonstração passo a passo, os testes e as perguntas prováveis estão em [APRESENTACAO.md](APRESENTACAO.md).
 
 ## Relatório
 
