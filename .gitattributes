@@ -1,0 +1,2 @@
+# O compilar.bat precisa de quebra de linha do Windows
+*.bat text eol=crlf
