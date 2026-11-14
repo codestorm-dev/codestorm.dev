@@ -1,0 +1,7 @@
+# Executável gerado na compilação
+*.exe
+*.o
+
+# Arquivos criados pelo programa ao rodar
+produtos.dat
+produtos.txt

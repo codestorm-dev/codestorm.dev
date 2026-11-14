@@ -1,0 +1,1879 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Controle de Estoque</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Painel de almoxarifado: indicadores no topo, tabela de produtos e alertas ao lado. Tema escuro (mesma família visual do SafeHouse). */
+:root{
+  color-scheme: dark;
+  --bg:#0d1519; --panel:#141f25; --panel-2:#1a272e; --line:#26363f; --fg:#e3ecef; --muted:#8ea3ad; --dim:#5b6f78;
+  --info:#5cc8e6; --accent:#f2b33d; --ok:#43c391; --alert:#ff5252;
+  --f-display:"Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --f-body:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:radial-gradient(1100px 520px at 0% -8%, rgba(242,179,61,.09), transparent 62%),radial-gradient(900px 520px at 100% -4%, rgba(92,200,230,.08), transparent 60%),var(--bg);background-attachment:fixed;color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.5;padding:18px 16px 32px;min-height:100vh}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1400px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+
+header{display:flex;flex-wrap:wrap;align-items:center;gap:14px 20px;justify-content:space-between;background:linear-gradient(120deg, rgba(242,179,61,.10), rgba(92,200,230,.04) 55%, transparent),var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 18px;box-shadow:0 12px 32px rgba(0,0,0,.28)}
+header .brand{flex:1 1 280px}
+.logo{filter:drop-shadow(0 4px 10px rgba(242,179,61,.25))}
+.hmeta{display:flex;gap:8px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12px;color:var(--muted);background:rgba(255,255,255,.02);white-space:nowrap}
+.chip .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px rgba(67,195,145,.18)}
+.chip.err{color:#ffb3b3;border-color:rgba(255,82,82,.45)} .chip.err .dot{background:var(--alert);box-shadow:0 0 0 3px rgba(255,82,82,.2)}
+.chip.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 16px;color:var(--dim);font-size:12px;padding:6px 4px 0;border-top:1px solid var(--line);margin-top:4px}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:42px;height:42px;flex:none}
+.brand h1{font-family:var(--f-display);font-size:26px;letter-spacing:.02em;margin:0;line-height:1}
+.brand p{margin:3px 0 0;color:var(--muted);font-size:13px}
+.hact{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.lookup{display:flex;border:1px solid var(--line);border-radius:8px;background:var(--panel);overflow:hidden}
+.lookup input{background:transparent;border:0;padding:8px 10px;width:150px;font-family:var(--f-mono);outline:none}
+.lookup button{border:0;border-left:1px solid var(--line);background:var(--panel-2);padding:0 12px;font-family:var(--f-display);font-weight:600;font-size:13px}
+.lookup:focus-within{border-color:var(--accent)}
+
+.btn{border-radius:8px;padding:8px 12px;font-family:var(--f-display);font-weight:600;font-size:13px;border:1px solid var(--line);background:var(--panel-2);display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#1a1405}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger{border-color:rgba(255,82,82,.5);color:#ff8a8a}
+.btn.danger.solid{background:var(--alert);border-color:var(--alert);color:#fff}
+.btn.ok{border-color:rgba(67,195,145,.5);color:var(--ok)}
+.btn.sm{font-size:12px;padding:4px 9px}
+.btn:disabled{opacity:.4;cursor:default}
+
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+@media (max-width:1000px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:560px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{--kc:var(--ok);--kb:rgba(67,195,145,.13);position:relative;overflow:hidden;display:flex;gap:12px;align-items:flex-start;background:linear-gradient(180deg, rgba(255,255,255,.03), transparent 70%),var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;min-width:0;box-shadow:0 6px 18px rgba(0,0,0,.18);transition:border-color .2s}
+.kpi::before{content:"";position:absolute;left:0;top:0;right:0;height:2px;background:linear-gradient(90deg, var(--kc), transparent)}
+.kpi[data-c="amber"]{--kc:var(--accent);--kb:rgba(242,179,61,.13)}
+.kpi[data-c="info"]{--kc:var(--info);--kb:rgba(92,200,230,.13)}
+.kpi.warn{--kc:var(--accent);--kb:rgba(242,179,61,.13)}
+.kpi.crit{--kc:var(--alert);--kb:rgba(255,82,82,.14)}
+.kpi:hover{border-color:rgba(255,255,255,.16)}
+.kpi .ico{flex:none;width:40px;height:40px;border-radius:11px;display:grid;place-items:center;background:var(--kb);color:var(--kc)}
+.kpi .ico svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.kpi .kt{min-width:0;flex:1}
+.kpi .k{font-family:var(--f-display);font-size:11.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.kpi .v{font-family:var(--f-mono);font-size:24px;font-weight:500;font-variant-numeric:tabular-nums;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi .s{color:var(--dim);font-size:12px}
+.kpi.warn .v{color:var(--accent)} .kpi.crit .v{color:var(--alert)}
+
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+@media (max-width:1100px){.layout{grid-template-columns:minmax(0,1fr)}}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.card{background:linear-gradient(180deg, rgba(255,255,255,.025), transparent 140px),var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;min-width:0;box-shadow:0 8px 24px rgba(0,0,0,.2)}
+.card h2{font-family:var(--f-display);font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.card h2 small{font-family:var(--f-mono);letter-spacing:0;text-transform:none;font-weight:400;color:var(--dim)}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:-4px -16px 12px;padding:0 12px;overflow-x:auto}
+.tabs button{background:none;border:0;border-bottom:2px solid transparent;padding:8px 10px 9px;font-family:var(--f-display);font-weight:600;font-size:14px;color:var(--muted);white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+.tabs .cnt{font-family:var(--f-mono);font-size:11px;color:var(--dim);margin-left:4px}
+
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.field{background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-width:0}
+.field:focus{border-color:var(--accent);outline:none}
+.tools .search{flex:1 1 220px}
+select.field{padding-right:6px}
+
+.tblwrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+table.prod{min-width:900px}
+table.prod td:nth-child(2){min-width:180px}
+table.mov{min-width:640px}
+th{font-family:var(--f-mono);font-size:11px;font-weight:500;color:var(--dim);text-align:left;text-transform:uppercase;letter-spacing:.06em;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th.sortable{cursor:pointer;user-select:none}
+th.sortable:hover{color:var(--muted)}
+th[aria-sort="ascending"]::after{content:" ▲"} th[aria-sort="descending"]::after{content:" ▼"}
+td{padding:8px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr.click{cursor:pointer}
+tr.click:hover td{background:rgba(255,255,255,.025)}
+td.n,th.n{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+td.code{font-family:var(--f-mono);color:var(--info)}
+.nm{font-weight:500}
+.sub{display:block;color:var(--dim);font-size:11.5px}
+.acts{display:flex;gap:4px;justify-content:flex-end;flex-wrap:nowrap}
+.ib{width:30px;height:28px;border-radius:6px;border:1px solid var(--line);background:var(--panel-2);display:inline-grid;place-items:center;padding:0;font-family:var(--f-mono);font-size:15px;line-height:1}
+.ib:hover{border-color:var(--muted)}
+.ib.in{color:var(--ok)} .ib.out{color:var(--accent)} .ib.del{color:#ff8a8a}
+.ib svg{width:15px;height:15px}
+
+.qty{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+.bar{width:70px;height:5px;border-radius:9px;background:#24323a;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok)}
+.bar.low i{background:var(--accent)} .bar.zero i{background:var(--alert)}
+
+.badge{display:inline-block;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
+.b-ok{color:var(--ok)} .b-low{color:var(--accent)} .b-zero{color:var(--alert)} .b-exp{color:#ff8a8a} .b-soon{color:var(--accent)} .b-dim{color:var(--dim)}
+.t-in{color:var(--ok)} .t-out{color:var(--accent)} .t-new{color:var(--info)} .t-del{color:#ff8a8a} .t-res{color:var(--muted)} .t-edit{color:var(--muted)}
+
+.empty{color:var(--muted);text-align:center;padding:36px 12px}
+.empty b{display:block;font-family:var(--f-display);font-size:16px;color:var(--fg);margin-bottom:4px}
+.empty .btn{margin-top:12px}
+
+.alerts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.alerts li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line);cursor:pointer}
+.alerts li:first-child{border-top:none}
+.alerts li:hover .nm{text-decoration:underline}
+.alerts .none{color:var(--dim);cursor:default;display:block}
+.alerts .none:hover{text-decoration:none}
+
+.cats{display:flex;flex-direction:column;gap:8px}
+.cat .row{display:flex;justify-content:space-between;gap:8px;font-size:13px}
+.cat .row span:last-child{font-family:var(--f-mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.cat .bar{width:100%;height:6px;margin-top:3px}
+.cat .bar i{background:var(--info)}
+
+.data{display:flex;flex-direction:column;gap:6px}
+.data .btn{justify-content:flex-start}
+.note{color:var(--dim);font-size:12px;margin:8px 0 0}
+
+/* Depósito 3D */
+.vpcard{padding:0;overflow:hidden}
+.vphead{display:flex;justify-content:space-between;align-items:flex-end;gap:6px 16px;flex-wrap:wrap;padding:14px 16px 0}
+.vphead h2{font-family:var(--f-display);font-size:19px;letter-spacing:.01em;text-transform:none;color:var(--fg);margin:0}
+.vphead p{margin:2px 0 0;color:var(--muted);font-size:12.5px}
+.vphead small{font-family:var(--f-mono);color:var(--dim);font-size:12px}
+.vp{position:relative;height:clamp(400px,60vh,620px);background:#0b1216;overflow:hidden;margin-top:10px}
+.vp canvas{display:block;width:100%;height:100%;touch-action:none;outline:none}
+.hud{position:absolute;z-index:5;display:flex;gap:6px;flex-wrap:wrap}
+.hud.tl{top:10px;left:10px} .hud.tr{top:10px;right:10px}
+.hbtn{background:rgba(13,21,25,.82);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.14);border-radius:7px;padding:6px 10px;font-size:12px;font-family:var(--f-display);font-weight:600;color:var(--fg)}
+.hbtn:hover{border-color:rgba(255,255,255,.35)}
+.hbtn[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.hbtn.add{border-color:rgba(67,195,145,.55);color:var(--ok)}
+.vlabels{position:absolute;inset:0;pointer-events:none;z-index:2;overflow:hidden}
+.tg{position:absolute;left:0;top:0;font-family:var(--f-mono);font-size:10.5px;line-height:1.3;padding:1px 5px;border-radius:4px;background:rgba(13,21,25,.86);border:1px solid rgba(255,255,255,.18);color:var(--fg);pointer-events:auto;white-space:nowrap;cursor:pointer;will-change:transform}
+.tg.low{border-color:var(--accent);color:var(--accent)}
+.tg.zero{background:var(--alert);border-color:var(--alert);color:#fff}
+.tg.exp{border-color:var(--alert);color:#ff8a8a;animation:blink 1s steps(2) infinite}
+.tg.sel{background:var(--accent);border-color:var(--accent);color:#1a1405;animation:none}
+.tg.add{border-style:dashed;border-color:rgba(67,195,145,.55);color:var(--ok);background:rgba(13,21,25,.55);font-size:13px;padding:0 6px}
+.tg.add:hover{background:rgba(67,195,145,.2)}
+@keyframes blink{50%{opacity:.5}}
+.vtip{position:absolute;z-index:6;pointer-events:none;background:rgba(13,21,25,.94);border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:12px;max-width:240px;line-height:1.35}
+.vtip b{display:block;font-size:13px}
+.vtip span{color:var(--muted);font-family:var(--f-mono);font-size:11px}
+.vphint{position:absolute;left:10px;bottom:10px;z-index:4;font-family:var(--f-mono);font-size:11.5px;color:rgba(227,236,239,.7);text-shadow:0 1px 3px #000;pointer-events:none;max-width:calc(100% - 310px)}
+.selp{position:absolute;right:10px;bottom:10px;z-index:5;width:280px;background:rgba(13,21,25,.92);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.selp .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.selp .top .x{background:none;border:0;color:var(--muted);font-size:20px;line-height:1;padding:0 2px}
+.selp .code{font-family:var(--f-mono);color:var(--info);font-size:12px}
+.selp .nm{display:block;font-family:var(--f-display);font-size:16px;line-height:1.2}
+.selp .big{font-family:var(--f-mono);font-size:26px;font-variant-numeric:tabular-nums;line-height:1}
+.selp .qrow{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.selp .lvl{height:6px;border-radius:9px;background:#24323a;position:relative;overflow:visible}
+.selp .lvl i{display:block;height:100%;border-radius:9px;background:var(--ok)}
+.selp .lvl.low i{background:var(--accent)} .selp .lvl.zero i{background:var(--alert)}
+.selp .lvl b{position:absolute;top:-3px;width:2px;height:12px;background:var(--fg);opacity:.6}
+.stepper{display:grid;grid-template-columns:34px minmax(0,1fr) 34px;gap:4px}
+.stepper button{background:var(--panel-2);border:1px solid var(--line);border-radius:7px;font-family:var(--f-mono);font-size:16px}
+.stepper input{text-align:center;font-family:var(--f-mono);font-size:15px;padding:6px}
+.selp .row2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.selp .btn{justify-content:center}
+.selp .btn.out{border-color:rgba(242,179,61,.55);color:var(--accent)}
+.selp .link{background:none;border:0;color:var(--muted);font-size:12px;text-decoration:underline;padding:0;align-self:flex-start}
+.selp .err{min-height:0}
+.selp.hint{width:250px;padding:10px 12px;gap:4px}
+.selp.hint p{margin:0;color:var(--muted);font-size:12px;line-height:1.4}
+.selp.hint b{font-family:var(--f-display);font-size:14px;color:var(--fg)}
+@media (max-width:700px){.selp,.selp.hint{left:10px;right:10px;width:auto}.vphint{display:none}.hud.tr{top:48px}}
+.vplegend{display:flex;flex-wrap:wrap;gap:6px 14px;padding:10px 16px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;align-items:center;justify-content:space-between}
+.vplegend .g{display:flex;flex-wrap:wrap;gap:6px 14px}
+.vplegend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.vplegend .tg{position:static;display:inline-block;pointer-events:none;margin-right:5px}
+.vpfail{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:24px;color:var(--muted);z-index:8;background:#0b1216}
+
+/* Dialogs */
+dialog{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:12px;padding:0;width:min(560px,calc(100vw - 32px));max-height:calc(100vh - 32px)}
+dialog::backdrop{background:rgba(4,8,10,.7)}
+.dh{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.dh h3{margin:0;font-family:var(--f-display);font-size:18px}
+.dh .x{background:none;border:0;color:var(--muted);font-size:22px;line-height:1;padding:2px 6px}
+.db{padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.df{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;border-top:1px solid var(--line);flex-wrap:wrap}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:520px){.grid2{grid-template-columns:1fr}}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);min-width:0}
+label.f .field{color:var(--fg);font-size:14px;width:100%}
+label.f .req{color:var(--accent)}
+.err{color:#ff8a8a;font-size:12.5px;min-height:1em;margin:0}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.seg button{background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:9px;font-family:var(--f-display);font-weight:600}
+.seg button[aria-pressed="true"][data-t="entrada"]{border-color:var(--ok);color:var(--ok);background:rgba(67,195,145,.08)}
+.seg button[aria-pressed="true"][data-t="saida"]{border-color:var(--accent);color:var(--accent);background:rgba(242,179,61,.08)}
+.preview{font-family:var(--f-mono);font-size:13px;color:var(--muted);background:var(--panel-2);border-radius:8px;padding:8px 10px}
+.preview b{color:var(--fg);font-weight:500}
+
+.det{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 16px;font-size:13.5px}
+.det dt{color:var(--dim);font-family:var(--f-mono);font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;padding-top:2px}
+.det dd{margin:0}
+.minilog{list-style:none;margin:0;padding:0;font-family:var(--f-mono);font-size:12px;max-height:200px;overflow-y:auto}
+.minilog li{display:grid;grid-template-columns:110px 80px minmax(0,1fr) auto;gap:8px;padding:5px 0;border-top:1px solid var(--line)}
+.minilog li:first-child{border-top:none}
+.minilog time{color:var(--dim)}
+@media (max-width:520px){.minilog li{grid-template-columns:90px 70px minmax(0,1fr)}.minilog li .n{display:none}}
+h4{margin:4px 0 0;font-family:var(--f-display);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--fg);color:#0d1519;font-weight:600;padding:9px 16px;border-radius:999px;transition:opacity .2s,transform .2s;pointer-events:none;z-index:50;max-width:calc(100vw - 32px);text-align:center}
+.toast.on{opacity:1;transform:translateX(-50%)}
+.toast.err{background:var(--alert);color:#fff}
+.warnbar{background:rgba(255,82,82,.12);border:1px solid rgba(255,82,82,.4);color:#ffb3b3;border-radius:8px;padding:8px 12px;font-size:13px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 42 42" aria-hidden="true">
+        <path d="M21 4 L37 12 V30 L21 38 L5 30 V12 Z" fill="none" stroke="#f2b33d" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M5 12 L21 20 L37 12 M21 20 V38" fill="none" stroke="#f2b33d" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M13 8 L29 16 V22" fill="none" stroke="#43c391" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <h1>Controle de Estoque</h1>
+        <p>Galpão Central · cadastro, movimentação e alertas de produtos</p>
+      </div>
+    </div>
+    <div class="hmeta">
+      <span class="chip" id="saveChip"><i class="dot"></i><span>Salvo neste computador</span></span>
+      <span class="chip mono" id="hClock">--</span>
+    </div>
+    <div class="hact">
+      <form class="lookup" id="lookupForm" role="search">
+        <input id="lookupInput" inputmode="numeric" placeholder="Código" aria-label="Consultar produto por código" autocomplete="off">
+        <button type="submit">Consultar</button>
+      </form>
+      <button class="btn primary" id="newBtn">+ Novo produto</button>
+    </div>
+  </header>
+
+  <div id="storageWarn" class="warnbar" hidden>Não foi possível salvar no navegador (modo anônimo ou armazenamento bloqueado). Use “Fazer backup” para não perder os dados.</div>
+
+  <section class="kpis" aria-label="Indicadores">
+    <div class="kpi" data-c="amber"><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v10l-8 4-8-4V7z"/><path d="M4 7l8 4 8-4M12 11v10"/></svg></span><div class="kt"><div class="k">Produtos ativos</div><div class="v" id="kAtivos">0</div><div class="s" id="kAtivosS">0 excluídos</div></div></div>
+    <div class="kpi" data-c="info"><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg></span><div class="kt"><div class="k">Unidades</div><div class="v" id="kUnid">0</div><div class="s">em estoque</div></div></div>
+    <div class="kpi" data-c="ok"><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 9v.01M18 15v.01"/></svg></span><div class="kt"><div class="k">Valor do estoque</div><div class="v" id="kValor">R$ 0,00</div><div class="s">quantidade × preço</div></div></div>
+    <div class="kpi" id="kBaixoBox" data-c="ok"><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7l6 6 4-4 8 8"/><path d="M15 17h6v-6"/></svg></span><div class="kt"><div class="k">Estoque baixo</div><div class="v" id="kBaixo">0</div><div class="s" id="kBaixoS">no mínimo ou abaixo</div></div></div>
+    <div class="kpi" id="kVencBox" data-c="ok"><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span><div class="kt"><div class="k">Validade</div><div class="v" id="kVenc">0</div><div class="s" id="kVencS">vencidos ou em 30 dias</div></div></div>
+  </section>
+
+  <div class="layout">
+    <div class="col">
+      <section class="card vpcard" aria-label="Depósito 3D">
+        <div class="vphead">
+          <div><h2>Depósito 3D</h2><p>Clique num palete para adicionar ou retirar · entregas chegam de caminhão pela doca</p></div>
+          <small id="vpInfo"></small>
+        </div>
+        <div class="vp" id="vp">
+          <div class="vlabels" id="vpLabels"></div>
+          <div class="hud tl" id="vpViews">
+            <button class="hbtn" data-view="geral" aria-pressed="true">Visão geral</button>
+            <button class="hbtn" data-view="frente" aria-pressed="false">De frente</button>
+            <button class="hbtn" data-view="topo" aria-pressed="false">De cima</button>
+            <button class="hbtn" data-view="doca" aria-pressed="false">Doca</button>
+          </div>
+          <div class="hud tr"><button class="hbtn add" id="vpNew">+ Novo produto</button></div>
+          <div class="vphint">Arraste para girar · role para aproximar · botão direito para mover</div>
+          <div class="selp hint" id="selp"></div>
+          <div class="vtip" id="vpTip" hidden></div>
+          <div class="vpfail" id="vpFail" hidden><span>Carregando…</span></div>
+        </div>
+        <div class="vplegend">
+          <div class="g" id="vpLegend"></div>
+          <div class="g"><span><span class="tg">101</span>ok</span><span><span class="tg low">102</span>baixo</span><span><span class="tg zero">202</span>zerado</span><span><span class="tg exp">105</span>vencido</span><span><span class="tg add">+</span>vaga livre</span></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="tabs" role="tablist">
+          <button role="tab" data-tab="produtos" aria-selected="true">Produtos<span class="cnt" id="cProd">0</span></button>
+          <button role="tab" data-tab="movs" aria-selected="false">Movimentações<span class="cnt" id="cMov">0</span></button>
+          <button role="tab" data-tab="lixeira" aria-selected="false">Excluídos<span class="cnt" id="cLix">0</span></button>
+        </div>
+
+        <div data-panel="produtos">
+          <div class="tools">
+            <input class="field search" id="q" type="search" placeholder="Pesquisar por nome, código ou fornecedor" aria-label="Pesquisar produtos">
+            <select class="field" id="fCat" aria-label="Filtrar por categoria"><option value="">Todas as categorias</option></select>
+            <select class="field" id="fSit" aria-label="Filtrar por situação">
+              <option value="">Todas as situações</option>
+              <option value="baixo">Estoque baixo</option>
+              <option value="zero">Sem estoque</option>
+              <option value="venc">Vencidos / vencendo</option>
+            </select>
+          </div>
+          <div class="tblwrap">
+            <table class="prod">
+              <thead><tr>
+                <th class="sortable" data-sort="codigo">Código</th>
+                <th class="sortable" data-sort="nome">Produto</th>
+                <th class="sortable" data-sort="fornecedor">Fornecedor</th>
+                <th class="sortable n" data-sort="qtd">Qtd</th>
+                <th class="sortable n" data-sort="preco">Preço</th>
+                <th class="sortable n" data-sort="valor">Total</th>
+                <th class="sortable" data-sort="validade">Validade</th>
+                <th>Situação</th>
+                <th class="n">Ações</th>
+              </tr></thead>
+              <tbody id="tbProd"></tbody>
+            </table>
+          </div>
+          <div id="emptyProd" class="empty" hidden></div>
+        </div>
+
+        <div data-panel="movs" hidden>
+          <div class="tools">
+            <input class="field search" id="qMov" type="search" placeholder="Filtrar por produto ou código" aria-label="Filtrar movimentações">
+            <select class="field" id="fTipo" aria-label="Filtrar por tipo">
+              <option value="">Todos os tipos</option>
+              <option>Entrada</option><option>Saída</option><option>Cadastro</option><option>Edição</option><option>Exclusão</option><option>Restauração</option>
+            </select>
+          </div>
+          <div class="tblwrap">
+            <table class="mov">
+              <thead><tr><th>Data / hora</th><th>Tipo</th><th>Código</th><th>Produto</th><th class="n">Qtd</th><th class="n">Saldo</th><th>Observação</th></tr></thead>
+              <tbody id="tbMov"></tbody>
+            </table>
+          </div>
+          <div id="emptyMov" class="empty" hidden><b>Nenhuma movimentação</b>Entradas, saídas e alterações aparecem aqui.</div>
+        </div>
+
+        <div data-panel="lixeira" hidden>
+          <p class="note" style="margin:0 0 10px">Exclusão lógica: o produto continua guardado com status “excluído” e pode ser restaurado.</p>
+          <div class="tblwrap">
+            <table class="mov">
+              <thead><tr><th>Código</th><th>Produto</th><th class="n">Qtd</th><th>Excluído em</th><th class="n">Ações</th></tr></thead>
+              <tbody id="tbLix"></tbody>
+            </table>
+          </div>
+          <div id="emptyLix" class="empty" hidden><b>Nenhum produto excluído</b></div>
+        </div>
+      </section>
+    </div>
+
+    <aside class="col">
+      <section class="card">
+        <h2>Alertas <small id="alertCnt">0</small></h2>
+        <ul class="alerts" id="alerts"></ul>
+      </section>
+      <section class="card">
+        <h2>Valor por categoria</h2>
+        <div class="cats" id="cats"></div>
+      </section>
+      <section class="card">
+        <h2>Arquivos</h2>
+        <div class="data">
+          <button class="btn" id="txtBtn">Exportar relatório TXT</button>
+          <button class="btn" id="bkBtn">Fazer backup (JSON)</button>
+          <button class="btn" id="rsBtn">Restaurar backup…</button>
+          <input type="file" id="rsFile" accept=".json,application/json" hidden>
+        </div>
+        <p class="note">Os dados ficam salvos neste navegador, neste computador. Faça backup de vez em quando.</p>
+      </section>
+    </aside>
+  </div>
+  <footer class="foot">
+    <span>Controle de Estoque · Galpão Central</span>
+    <span>Dados salvos localmente neste navegador · exporte o TXT ou faça backup quando quiser</span>
+  </footer>
+</div>
+
+<!-- Cadastro / edição -->
+<dialog id="dlgProd" aria-labelledby="dpTitle">
+  <form id="fProd" novalidate>
+    <div class="dh"><h3 id="dpTitle">Novo produto</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
+    <div class="db">
+      <div class="grid2">
+        <label class="f">Código <span class="req">*</span><input class="field" name="codigo" inputmode="numeric" autocomplete="off"></label>
+        <label class="f">Unidade<select class="field" name="unidade"><option>un</option><option>cx</option><option>kg</option><option>g</option><option>L</option><option>mL</option><option>pct</option><option>m</option></select></label>
+      </div>
+      <label class="f">Nome do produto <span class="req">*</span><input class="field" name="nome" maxlength="60" autocomplete="off"></label>
+      <div class="grid2">
+        <label class="f">Categoria <span class="req">*</span><input class="field" name="categoria" list="dlCat" maxlength="30" autocomplete="off"></label>
+        <label class="f">Fornecedor<input class="field" name="fornecedor" list="dlForn" maxlength="40" autocomplete="off"></label>
+      </div>
+      <div class="grid2">
+        <label class="f">Preço unitário (R$) <span class="req">*</span><input class="field" name="preco" inputmode="decimal" placeholder="0,00" autocomplete="off"></label>
+        <label class="f">Validade<input class="field" name="validade" type="date"></label>
+      </div>
+      <div class="grid2">
+        <label class="f" id="qtdLbl">Quantidade inicial<input class="field" name="qtd" inputmode="numeric" placeholder="0" autocomplete="off"></label>
+        <label class="f">Estoque mínimo<input class="field" name="minimo" inputmode="numeric" placeholder="0" autocomplete="off"></label>
+      </div>
+      <p class="err" id="pErr"></p>
+    </div>
+    <div class="df"><button type="button" class="btn" data-close>Cancelar</button><button type="submit" class="btn primary" id="pSave">Cadastrar</button></div>
+  </form>
+</dialog>
+<datalist id="dlCat"></datalist><datalist id="dlForn"></datalist>
+
+<!-- Entrada / saída -->
+<dialog id="dlgMov" aria-labelledby="dmTitle">
+  <form id="fMov" novalidate>
+    <div class="dh"><h3 id="dmTitle">Movimentar estoque</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
+    <div class="db">
+      <div><span class="nm" id="mNome"></span><span class="sub" id="mSub"></span></div>
+      <div class="seg" role="group" aria-label="Tipo de movimentação">
+        <button type="button" data-t="entrada" aria-pressed="true">Entrada (compra)</button>
+        <button type="button" data-t="saida" aria-pressed="false">Saída (venda/uso)</button>
+      </div>
+      <div class="grid2">
+        <label class="f">Quantidade <span class="req">*</span><input class="field" name="qtd" inputmode="numeric" autocomplete="off"></label>
+        <label class="f">Observação<input class="field" name="obs" maxlength="60" placeholder="ex.: NF 1234" autocomplete="off"></label>
+      </div>
+      <div class="preview" id="mPrev"></div>
+      <p class="err" id="mErr"></p>
+    </div>
+    <div class="df"><button type="button" class="btn" data-close>Cancelar</button><button type="submit" class="btn primary">Confirmar</button></div>
+  </form>
+</dialog>
+
+<!-- Consulta / detalhe -->
+<dialog id="dlgDet" aria-labelledby="ddTitle">
+  <div class="dh"><h3 id="ddTitle">Produto</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
+  <div class="db">
+    <dl class="det" id="ddBody"></dl>
+    <h4>Histórico</h4>
+    <ul class="minilog" id="ddLog"></ul>
+  </div>
+  <div class="df" id="ddActs"></div>
+</dialog>
+
+<!-- Confirmação -->
+<dialog id="dlgConf" aria-labelledby="dcTitle">
+  <div class="dh"><h3 id="dcTitle">Confirmar</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
+  <div class="db"><p id="dcText" style="margin:0"></p></div>
+  <div class="df"><button type="button" class="btn" data-close>Cancelar</button><button type="button" class="btn danger solid" id="dcOk">Confirmar</button></div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+'use strict';
+
+/* ================= Dados ================= */
+const KEY = 'controleEstoque.v1';
+let db = load();
+
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw){
+      const d = JSON.parse(raw);
+      if(d && Array.isArray(d.produtos)) return { produtos:d.produtos, movs:Array.isArray(d.movs)?d.movs:[] };
+    }
+  }catch(e){}
+  return { produtos:[], movs:[] };
+}
+function save(){
+  let ok = true;
+  try{ localStorage.setItem(KEY, JSON.stringify(db)); }catch(e){ ok = false; }
+  statusSalvo(ok);
+}
+function statusSalvo(ok){
+  $('#storageWarn').hidden = ok;
+  const c = $('#saveChip'); c.classList.toggle('err', !ok);
+  c.lastElementChild.textContent = ok ? 'Salvo neste computador' : 'Não está salvando · faça backup';
+}
+
+const ativos   = () => db.produtos.filter(p => p.status === 'A');
+const excluidos= () => db.produtos.filter(p => p.status === 'E');
+const porCodigo= c  => db.produtos.find(p => p.status === 'A' && p.codigo === c);
+const porId    = id => db.produtos.find(p => p.id === id);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+
+function registrar(p, tipo, qtd, obs){
+  db.movs.push({ id:uid(), data:new Date().toISOString(), pid:p.id, codigo:p.codigo, nome:p.nome, tipo, qtd, saldo:p.qtd, obs:obs||'' });
+}
+
+/* ================= Utilidades ================= */
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const brl = new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
+const num = new Intl.NumberFormat('pt-BR');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm = s => String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+
+function parseDec(s){
+  s = String(s||'').trim().replace(/\s|R\$/g,'');
+  if(!s) return NaN;
+  if(s.includes(',')) s = s.replace(/\./g,'').replace(',', '.');
+  return /^\d+(\.\d+)?$/.test(s) ? parseFloat(s) : NaN;
+}
+function parseInt0(s, vazio){
+  s = String(s||'').trim();
+  if(!s) return vazio;
+  return /^\d+$/.test(s) ? parseInt(s,10) : NaN;
+}
+function hoje0(){ const d = new Date(); d.setHours(0,0,0,0); return d; }
+function diasAte(iso){
+  if(!iso) return null;
+  const [y,m,d] = iso.split('-').map(Number);
+  return Math.round((new Date(y,m-1,d) - hoje0()) / 864e5);
+}
+const fmtData = iso => { if(!iso) return '—'; const [y,m,d] = iso.split('-'); return `${d}/${m}/${y}`; };
+const fmtDH = iso => { const d = new Date(iso); return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); };
+const isoLocal = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+function situacao(p){
+  if(p.qtd === 0) return {cls:'zero', badge:'<span class="badge b-zero">Sem estoque</span>'};
+  if(p.minimo > 0 && p.qtd <= p.minimo) return {cls:'low', badge:'<span class="badge b-low">Baixo</span>'};
+  return {cls:'', badge:'<span class="badge b-ok">OK</span>'};
+}
+function validadeInfo(p){
+  const d = diasAte(p.validade);
+  if(d === null) return {txt:'—', badge:'', venc:false};
+  if(d < 0)   return {txt:fmtData(p.validade), badge:'<span class="badge b-exp">Vencido</span>', venc:true};
+  if(d <= 30) return {txt:fmtData(p.validade), badge:`<span class="badge b-soon">${d===0?'Vence hoje':'Vence em '+d+'d'}</span>`, venc:true};
+  return {txt:fmtData(p.validade), badge:'', venc:false};
+}
+const estaBaixo = p => p.qtd === 0 || (p.minimo > 0 && p.qtd <= p.minimo);
+
+let toastT;
+function toast(msg, err){
+  const t = $('#toast'); t.textContent = msg; t.className = 'toast on' + (err?' err':'');
+  clearTimeout(toastT); toastT = setTimeout(()=> t.className = 'toast' + (err?' err':''), 2600);
+}
+
+/* ================= Renderização ================= */
+let sortKey = 'codigo', sortDir = 1;
+
+function render(){
+  renderKPIs(); renderListas(); renderProdutos(); renderMovs(); renderLixeira(); renderAlertas(); renderCats();
+  deposito.update();
+}
+
+function renderKPIs(){
+  const a = ativos();
+  const unid = a.reduce((s,p)=>s+p.qtd,0);
+  const valor = a.reduce((s,p)=>s+p.qtd*p.preco,0);
+  const baixo = a.filter(estaBaixo);
+  const zero = baixo.filter(p=>p.qtd===0).length;
+  const venc = a.filter(p=>validadeInfo(p).venc);
+  const vencidos = venc.filter(p=>diasAte(p.validade)<0).length;
+  $('#kAtivos').textContent = num.format(a.length);
+  const ex = excluidos().length;
+  $('#kAtivosS').textContent = `${ex} excluído${ex===1?'':'s'} · ${db.produtos.length} no total`;
+  $('#kUnid').textContent = num.format(unid);
+  $('#kValor').textContent = brl.format(valor);
+  $('#kBaixo').textContent = baixo.length;
+  $('#kBaixoS').textContent = zero ? `${zero} sem estoque` : 'no mínimo ou abaixo';
+  $('#kBaixoBox').className = 'kpi' + (zero ? ' crit' : baixo.length ? ' warn' : '');
+  $('#kVenc').textContent = venc.length;
+  $('#kVencS').textContent = vencidos ? `${vencidos} vencido${vencidos===1?'':'s'}` : 'vencidos ou em 30 dias';
+  $('#kVencBox').className = 'kpi' + (vencidos ? ' crit' : venc.length ? ' warn' : '');
+  $('#cProd').textContent = a.length;
+  $('#cMov').textContent = db.movs.length;
+  $('#cLix').textContent = ex;
+}
+
+function renderListas(){
+  const a = ativos();
+  const cats = [...new Set(a.map(p=>p.categoria))].sort((x,y)=>x.localeCompare(y,'pt-BR'));
+  const forn = [...new Set(a.map(p=>p.fornecedor).filter(Boolean))].sort((x,y)=>x.localeCompare(y,'pt-BR'));
+  const sel = $('#fCat'), cur = sel.value;
+  sel.innerHTML = '<option value="">Todas as categorias</option>' + cats.map(c=>`<option>${esc(c)}</option>`).join('');
+  sel.value = cats.includes(cur) ? cur : '';
+  $('#dlCat').innerHTML = cats.map(c=>`<option value="${esc(c)}">`).join('');
+  $('#dlForn').innerHTML = forn.map(c=>`<option value="${esc(c)}">`).join('');
+}
+
+const icoEdit = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M11 2.5l2.5 2.5L6 12.5H3.5V10z"/></svg>';
+const icoDel  = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.7 8.5h5.6l.7-8.5"/></svg>';
+
+function renderProdutos(){
+  const q = norm($('#q').value.trim()), cat = $('#fCat').value, sit = $('#fSit').value;
+  let lista = ativos().filter(p=>{
+    if(cat && p.categoria !== cat) return false;
+    if(sit==='baixo' && !estaBaixo(p)) return false;
+    if(sit==='zero' && p.qtd !== 0) return false;
+    if(sit==='venc' && !validadeInfo(p).venc) return false;
+    if(q && !(norm(p.nome).includes(q) || String(p.codigo).includes(q) || norm(p.fornecedor).includes(q) || norm(p.categoria).includes(q))) return false;
+    return true;
+  });
+  const val = p => sortKey==='valor' ? p.qtd*p.preco : sortKey==='validade' ? (p.validade||'9999') : p[sortKey];
+  lista.sort((a,b)=>{ const x=val(a), y=val(b); return (typeof x==='string' ? x.localeCompare(y,'pt-BR') : x-y) * sortDir; });
+  $$('th[data-sort]').forEach(th => th.setAttribute('aria-sort', th.dataset.sort===sortKey ? (sortDir>0?'ascending':'descending') : 'none'));
+
+  $('#tbProd').innerHTML = lista.map(p=>{
+    const s = situacao(p), v = validadeInfo(p);
+    const ref = Math.max(p.minimo*2, p.qtd, 1);
+    return `<tr class="click" data-id="${p.id}">
+      <td class="code">${p.codigo}</td>
+      <td><span class="nm">${esc(p.nome)}</span><span class="sub">${esc(p.categoria)}</span></td>
+      <td>${esc(p.fornecedor)||'<span class="b-dim">—</span>'}</td>
+      <td class="n"><div class="qty"><span>${num.format(p.qtd)} <span class="b-dim">${esc(p.unidade)}</span></span><span class="bar ${s.cls}" title="Mínimo: ${p.minimo}"><i style="width:${Math.min(100,p.qtd/ref*100)}%"></i></span></div></td>
+      <td class="n">${brl.format(p.preco)}</td>
+      <td class="n">${brl.format(p.qtd*p.preco)}</td>
+      <td>${v.txt}${v.badge?'<br>'+v.badge:''}</td>
+      <td>${s.badge}</td>
+      <td class="n"><div class="acts">
+        <button class="ib in"  data-act="entrada" title="Entrada" aria-label="Entrada de ${esc(p.nome)}">+</button>
+        <button class="ib out" data-act="saida"   title="Saída" aria-label="Saída de ${esc(p.nome)}">−</button>
+        <button class="ib"     data-act="editar"  title="Editar" aria-label="Editar ${esc(p.nome)}">${icoEdit}</button>
+        <button class="ib del" data-act="excluir" title="Excluir" aria-label="Excluir ${esc(p.nome)}">${icoDel}</button>
+      </div></td></tr>`;
+  }).join('');
+
+  const empty = $('#emptyProd');
+  if(lista.length){ empty.hidden = true; }
+  else if(!ativos().length){
+    empty.hidden = false;
+    empty.innerHTML = '<b>Nenhum produto cadastrado</b>Comece cadastrando um produto ou carregue dados de exemplo para testar.<br><button class="btn primary" data-empty="novo">+ Novo produto</button> <button class="btn" data-empty="exemplo">Carregar exemplo</button>';
+  } else {
+    empty.hidden = false;
+    empty.innerHTML = '<b>Nada encontrado</b>Nenhum produto corresponde aos filtros.<br><button class="btn" data-empty="limpar">Limpar filtros</button>';
+  }
+}
+
+const tipoCls = {Entrada:'t-in','Saída':'t-out',Cadastro:'t-new','Exclusão':'t-del','Restauração':'t-res','Edição':'t-edit'};
+function qtdMov(m){
+  if(m.tipo==='Entrada') return '+'+num.format(m.qtd);
+  if(m.tipo==='Saída') return '−'+num.format(m.qtd);
+  if(m.tipo==='Cadastro') return num.format(m.qtd);
+  return '—';
+}
+function renderMovs(){
+  const q = norm($('#qMov').value.trim()), tipo = $('#fTipo').value;
+  const lista = db.movs.filter(m => (!tipo || m.tipo===tipo) && (!q || norm(m.nome).includes(q) || String(m.codigo).includes(q))).slice().reverse();
+  $('#tbMov').innerHTML = lista.slice(0,500).map(m=>`<tr>
+    <td class="n" style="text-align:left">${fmtDH(m.data)}</td>
+    <td><span class="${tipoCls[m.tipo]||''}">${m.tipo}</span></td>
+    <td class="code">${m.codigo}</td>
+    <td>${esc(m.nome)}</td>
+    <td class="n ${tipoCls[m.tipo]||''}">${qtdMov(m)}</td>
+    <td class="n">${num.format(m.saldo)}</td>
+    <td class="b-dim">${esc(m.obs)}</td></tr>`).join('');
+  $('#emptyMov').hidden = lista.length > 0;
+}
+
+function renderLixeira(){
+  const lista = excluidos().slice().sort((a,b)=>(b.excluidoEm||'').localeCompare(a.excluidoEm||''));
+  $('#tbLix').innerHTML = lista.map(p=>`<tr data-id="${p.id}">
+    <td class="code">${p.codigo}</td>
+    <td><span class="nm">${esc(p.nome)}</span><span class="sub">${esc(p.categoria)}</span></td>
+    <td class="n">${num.format(p.qtd)}</td>
+    <td>${p.excluidoEm?fmtDH(p.excluidoEm):'—'}</td>
+    <td class="n"><button class="btn sm ok" data-act="restaurar">Restaurar</button></td></tr>`).join('');
+  $('#emptyLix').hidden = lista.length > 0;
+}
+
+function renderAlertas(){
+  const itens = [];
+  ativos().forEach(p=>{
+    const d = diasAte(p.validade);
+    if(d !== null && d < 0) itens.push({p, ord:0, html:`<span class="badge b-exp">Vencido</span>`, sub:`venceu em ${fmtData(p.validade)}`});
+    if(p.qtd === 0) itens.push({p, ord:1, html:'<span class="badge b-zero">Zerado</span>', sub:`mínimo ${p.minimo} ${p.unidade}`});
+    else if(p.minimo>0 && p.qtd<=p.minimo) itens.push({p, ord:2, html:'<span class="badge b-low">Baixo</span>', sub:`${p.qtd} de mínimo ${p.minimo} ${p.unidade}`});
+    if(d !== null && d >= 0 && d <= 30) itens.push({p, ord:3, html:`<span class="badge b-soon">${d===0?'Hoje':d+' dias'}</span>`, sub:`vence em ${fmtData(p.validade)}`});
+  });
+  itens.sort((a,b)=>a.ord-b.ord || a.p.nome.localeCompare(b.p.nome,'pt-BR'));
+  $('#alertCnt').textContent = itens.length;
+  $('#alerts').innerHTML = itens.length
+    ? itens.map(i=>`<li data-id="${i.p.id}" tabindex="0"><div><span class="nm">${esc(i.p.nome)}</span><span class="sub">#${i.p.codigo} · ${esc(i.sub)}</span></div>${i.html}</li>`).join('')
+    : '<li class="none">Nenhum alerta. Estoque em dia.</li>';
+}
+
+function renderCats(){
+  const m = new Map();
+  ativos().forEach(p=> m.set(p.categoria, (m.get(p.categoria)||0) + p.qtd*p.preco));
+  const arr = [...m].sort((a,b)=>b[1]-a[1]);
+  const max = arr.length ? Math.max(...arr.map(x=>x[1]), 1) : 1;
+  $('#cats').innerHTML = arr.length
+    ? arr.map(([c,v])=>`<div class="cat"><div class="row"><span>${esc(c)}</span><span>${brl.format(v)}</span></div><div class="bar"><i style="width:${v/max*100}%"></i></div></div>`).join('')
+    : '<span class="b-dim" style="font-size:13px">Sem produtos ativos.</span>';
+}
+
+/* ================= Cadastro / edição ================= */
+let editId = null;
+function abrirCadastro(p, preset){
+  const f = $('#fProd'); f.reset(); $('#pErr').textContent = '';
+  editId = p ? p.id : null;
+  $('#dpTitle').textContent = p ? `Editar produto #${p.codigo}` : 'Novo produto';
+  $('#pSave').textContent = p ? 'Salvar alterações' : 'Cadastrar';
+  f.codigo.readOnly = !!p;
+  $('#qtdLbl').hidden = !!p;
+  if(p){
+    f.codigo.value = p.codigo; f.nome.value = p.nome; f.categoria.value = p.categoria; f.fornecedor.value = p.fornecedor;
+    f.unidade.value = p.unidade; f.preco.value = p.preco.toFixed(2).replace('.',','); f.validade.value = p.validade||''; f.minimo.value = p.minimo;
+  } else {
+    const max = db.produtos.reduce((m,x)=>Math.max(m,x.codigo),0);
+    f.codigo.value = max + 1;
+    if(preset && preset.categoria){
+      f.categoria.value = preset.categoria;
+      const irmao = ativos().find(x=>x.categoria===preset.categoria && x.fornecedor);
+      if(irmao) f.fornecedor.value = irmao.fornecedor;
+    }
+  }
+  $('#dlgProd').showModal();
+  f.nome.focus();
+}
+
+$('#fProd').addEventListener('submit', e=>{
+  e.preventDefault();
+  const f = e.target, err = $('#pErr');
+  const codigo = parseInt0(f.codigo.value, NaN);
+  const nome = f.nome.value.trim(), categoria = f.categoria.value.trim(), fornecedor = f.fornecedor.value.trim();
+  const preco = parseDec(f.preco.value);
+  const qtd = parseInt0(f.qtd.value, 0), minimo = parseInt0(f.minimo.value, 0);
+  const fail = (msg, el) => { err.textContent = msg; el.focus(); };
+  if(!editId){
+    if(!(codigo > 0)) return fail('Informe um código numérico maior que zero.', f.codigo);
+    if(porCodigo(codigo)) return fail(`Já existe um produto ativo com o código ${codigo}.`, f.codigo);
+  }
+  if(!nome) return fail('Informe o nome do produto.', f.nome);
+  if(!categoria) return fail('Informe a categoria.', f.categoria);
+  if(isNaN(preco)) return fail('Preço inválido. Use o formato 12,50.', f.preco);
+  if(!editId && isNaN(qtd)) return fail('Quantidade inválida (número inteiro ≥ 0).', f.qtd);
+  if(isNaN(minimo)) return fail('Estoque mínimo inválido (número inteiro ≥ 0).', f.minimo);
+
+  if(editId){
+    const p = porId(editId);
+    Object.assign(p, {nome, categoria, fornecedor, unidade:f.unidade.value, preco, validade:f.validade.value, minimo});
+    registrar(p, 'Edição', 0, 'dados atualizados');
+    toast('Produto atualizado.');
+  } else {
+    const p = {id:uid(), codigo, nome, categoria, fornecedor, unidade:f.unidade.value, preco, qtd, minimo, validade:f.validade.value, status:'A', criadoEm:new Date().toISOString(), excluidoEm:null};
+    db.produtos.push(p);
+    registrar(p, 'Cadastro', qtd, 'estoque inicial');
+    deposito.anim(p.id, 'entrada');
+    deposito.select(p.id, true);
+    toast(`Produto #${codigo} cadastrado.`);
+  }
+  save(); render(); $('#dlgProd').close();
+});
+
+/* ================= Entrada / saída ================= */
+let movId = null, movTipo = 'entrada';
+function abrirMov(p, tipo){
+  movId = p.id; movTipo = tipo;
+  const f = $('#fMov'); f.reset(); $('#mErr').textContent = '';
+  $('#mNome').textContent = p.nome;
+  $('#mSub').textContent = `#${p.codigo} · em estoque: ${p.qtd} ${p.unidade}` + (p.minimo?` · mínimo: ${p.minimo}`:'');
+  setTipo(tipo);
+  $('#dlgMov').showModal(); f.qtd.focus();
+}
+function setTipo(t){
+  movTipo = t;
+  $$('#dlgMov .seg button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.t===t));
+  prevMov();
+}
+function prevMov(){
+  const p = porId(movId); if(!p) return;
+  const q = parseInt0($('#fMov').qtd.value, 0);
+  const novo = isNaN(q) ? null : (movTipo==='entrada' ? p.qtd+q : p.qtd-q);
+  $('#mPrev').innerHTML = novo===null ? 'Quantidade inválida' :
+    `Saldo: ${p.qtd} → <b>${novo} ${esc(p.unidade)}</b>` + (novo<0 ? ' <span class="b-exp">(insuficiente)</span>' : (p.minimo>0 && novo<=p.minimo ? ' <span class="b-low">(abaixo do mínimo)</span>' : ''));
+}
+$$('#dlgMov .seg button').forEach(b=>b.addEventListener('click', ()=>setTipo(b.dataset.t)));
+$('#fMov').qtd.addEventListener('input', prevMov);
+/* Registra entrada/saída. Retorna mensagem de erro ou null. Usado pelo diálogo e pelo depósito 3D. */
+function movimentar(p, tipo, q, obs){
+  if(!(q > 0)) return 'Informe uma quantidade inteira maior que zero.';
+  if(tipo==='saida' && q > p.qtd) return `Estoque insuficiente: há apenas ${p.qtd} ${p.unidade}.`;
+  p.qtd += tipo==='entrada' ? q : -q;
+  registrar(p, tipo==='entrada'?'Entrada':'Saída', q, obs||'');
+  deposito.anim(p.id, tipo);
+  save(); render();
+  toast(`${tipo==='entrada'?'Entrada':'Saída'} de ${q} ${p.unidade} registrada. Saldo: ${p.qtd}.`);
+  if(detAberto === p.id) abrirDetalhe(p);
+  return null;
+}
+$('#fMov').addEventListener('submit', e=>{
+  e.preventDefault();
+  const f = e.target, p = porId(movId);
+  const erro = movimentar(p, movTipo, parseInt0(f.qtd.value, NaN), f.obs.value.trim());
+  if(erro){ $('#mErr').textContent = erro; f.qtd.focus(); return; }
+  $('#dlgMov').close();
+});
+
+/* ================= Consulta / detalhe ================= */
+let detAberto = null;
+function abrirDetalhe(p){
+  detAberto = p.id;
+  if(p.status === 'A') deposito.select(p.id, true);
+  const s = situacao(p), v = validadeInfo(p);
+  $('#ddTitle').textContent = `#${p.codigo} · ${p.nome}`;
+  $('#ddBody').innerHTML = `
+    <dt>Categoria</dt><dd>${esc(p.categoria)}</dd>
+    <dt>Fornecedor</dt><dd>${esc(p.fornecedor)||'—'}</dd>
+    <dt>Quantidade</dt><dd>${num.format(p.qtd)} ${esc(p.unidade)} ${s.badge}</dd>
+    <dt>Mínimo</dt><dd>${p.minimo} ${esc(p.unidade)}</dd>
+    <dt>Preço unit.</dt><dd>${brl.format(p.preco)}</dd>
+    <dt>Valor total</dt><dd>${brl.format(p.qtd*p.preco)}</dd>
+    <dt>Validade</dt><dd>${v.txt} ${v.badge}</dd>
+    <dt>Status</dt><dd>${p.status==='A'?'<span class="badge b-ok">Ativo</span>':'<span class="badge b-dim">Excluído</span>'}</dd>
+    <dt>Cadastrado</dt><dd>${fmtDH(p.criadoEm)}</dd>`;
+  const ms = db.movs.filter(m=>m.pid===p.id).slice().reverse();
+  $('#ddLog').innerHTML = ms.length ? ms.map(m=>`<li><time>${fmtDH(m.data)}</time><span class="${tipoCls[m.tipo]||''}">${m.tipo}</span><span>${qtdMov(m)} → ${m.saldo}</span><span class="n b-dim">${esc(m.obs)}</span></li>`).join('') : '<li class="b-dim">Sem movimentações.</li>';
+  $('#ddActs').innerHTML = p.status==='A'
+    ? `<button class="btn danger" data-dact="excluir">Excluir</button><button class="btn" data-dact="editar">Editar</button><button class="btn" data-dact="saida">− Saída</button><button class="btn primary" data-dact="entrada">+ Entrada</button>`
+    : `<button class="btn ok" data-dact="restaurar">Restaurar</button>`;
+  const d = $('#dlgDet'); if(!d.open) d.showModal();
+}
+$('#dlgDet').addEventListener('close', ()=> detAberto = null);
+$('#ddActs').addEventListener('click', e=>{
+  const b = e.target.closest('[data-dact]'); if(!b) return;
+  const p = porId(detAberto); if(!p) return;
+  const a = b.dataset.dact;
+  if(a==='entrada'||a==='saida') abrirMov(p, a);
+  else { $('#dlgDet').close(); acao(p, a); }
+});
+
+$('#lookupForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  const inp = $('#lookupInput'), c = parseInt0(inp.value, NaN);
+  if(!(c > 0)){ toast('Digite um código numérico.', true); inp.focus(); return; }
+  const p = porCodigo(c);
+  if(p){ abrirDetalhe(p); inp.value = ''; return; }
+  const ex = db.produtos.find(x=>x.codigo===c);
+  if(ex) { abrirDetalhe(ex); toast(`O código ${c} está excluído.`, true); }
+  else toast(`Produto com código ${c} não encontrado.`, true);
+});
+
+/* ================= Exclusão lógica / restauração ================= */
+let confirmar = null;
+function pedirConfirmacao(titulo, texto, botao, fn){
+  $('#dcTitle').textContent = titulo; $('#dcText').innerHTML = texto; $('#dcOk').textContent = botao;
+  confirmar = fn; $('#dlgConf').showModal();
+}
+$('#dcOk').addEventListener('click', ()=>{ const fn = confirmar; confirmar = null; $('#dlgConf').close(); if(fn) fn(); });
+
+function acao(p, a){
+  if(a==='entrada'||a==='saida') return abrirMov(p, a);
+  if(a==='editar') return abrirCadastro(p);
+  if(a==='excluir') return pedirConfirmacao('Excluir produto',
+    `Excluir <b>#${p.codigo} · ${esc(p.nome)}</b>? Ele sai da lista e da contagem, mas fica guardado em “Excluídos” e pode ser restaurado.`, 'Excluir', ()=>{
+      p.status = 'E'; p.excluidoEm = new Date().toISOString();
+      registrar(p, 'Exclusão', 0, 'exclusão lógica');
+      save(); render(); toast(`Produto #${p.codigo} excluído.`);
+    });
+  if(a==='restaurar'){
+    if(porCodigo(p.codigo)) return toast(`Já existe um produto ativo com o código ${p.codigo}.`, true);
+    p.status = 'A'; p.excluidoEm = null;
+    registrar(p, 'Restauração', 0, '');
+    save(); render(); toast(`Produto #${p.codigo} restaurado.`);
+  }
+}
+
+$('#tbProd').addEventListener('click', e=>{
+  const tr = e.target.closest('tr[data-id]'); if(!tr) return;
+  const p = porId(tr.dataset.id); if(!p) return;
+  const b = e.target.closest('[data-act]');
+  if(b) acao(p, b.dataset.act); else abrirDetalhe(p);
+});
+$('#tbLix').addEventListener('click', e=>{
+  const b = e.target.closest('[data-act]'); const tr = e.target.closest('tr[data-id]');
+  if(b && tr) acao(porId(tr.dataset.id), b.dataset.act);
+});
+function alertaClick(e){
+  const li = e.target.closest('li[data-id]'); if(!li) return;
+  if(e.type==='keydown' && e.key!=='Enter') return;
+  abrirDetalhe(porId(li.dataset.id));
+}
+$('#alerts').addEventListener('click', alertaClick);
+$('#alerts').addEventListener('keydown', alertaClick);
+
+/* ================= Exportação TXT e backup ================= */
+function baixar(nome, conteudo, tipo){
+  const url = URL.createObjectURL(new Blob([conteudo], {type:tipo}));
+  const a = document.createElement('a'); a.href = url; a.download = nome;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+}
+const pad = (s,n) => { s = String(s); return s.length > n ? s.slice(0,n-1)+'…' : s.padEnd(n); };
+const padL = (s,n) => String(s).padStart(n);
+
+$('#txtBtn').addEventListener('click', ()=>{
+  const a = ativos().slice().sort((x,y)=>x.codigo-y.codigo);
+  if(!a.length) return toast('Nenhum produto ativo para exportar.', true);
+  const L = '='.repeat(118), l = '-'.repeat(118);
+  const linhas = [
+    'RELATORIO DE ESTOQUE DE PRODUTOS',
+    'Gerado em: ' + new Date().toLocaleString('pt-BR'),
+    L,
+    pad('CODIGO',8)+pad('PRODUTO',30)+pad('CATEGORIA',16)+pad('FORNECEDOR',20)+padL('QTD',8)+padL('MIN',6)+padL('PRECO',12)+padL('TOTAL',14)+'  '+'VALIDADE',
+    l
+  ];
+  let total = 0;
+  a.forEach(p=>{
+    const v = p.qtd*p.preco; total += v;
+    const flag = (estaBaixo(p)?' [BAIXO]':'') + (validadeInfo(p).venc ? (diasAte(p.validade)<0?' [VENCIDO]':' [VENCENDO]') : '');
+    linhas.push(pad(p.codigo,8)+pad(p.nome,30)+pad(p.categoria,16)+pad(p.fornecedor||'-',20)+padL(p.qtd+' '+p.unidade,8)+padL(p.minimo,6)+padL(p.preco.toFixed(2),12)+padL(v.toFixed(2),14)+'  '+(p.validade?fmtData(p.validade):'-')+flag);
+  });
+  linhas.push(l,
+    'Produtos ativos   : ' + a.length,
+    'Produtos excluidos: ' + excluidos().length,
+    'Unidades em estoque: ' + a.reduce((s,p)=>s+p.qtd,0),
+    'Valor total       : ' + brl.format(total), '');
+  baixar('estoque.txt', linhas.join('\r\n'), 'text/plain;charset=utf-8');
+  toast(`${a.length} produto(s) exportado(s) para estoque.txt.`);
+});
+
+$('#bkBtn').addEventListener('click', ()=>{
+  baixar(`estoque-backup-${isoLocal(new Date())}.json`, JSON.stringify({app:'controle-estoque', versao:1, ...db}, null, 2), 'application/json');
+  toast('Backup gerado.');
+});
+$('#rsBtn').addEventListener('click', ()=> $('#rsFile').click());
+$('#rsFile').addEventListener('change', e=>{
+  const file = e.target.files[0]; e.target.value = ''; if(!file) return;
+  file.text().then(txt=>{
+    let d; try{ d = JSON.parse(txt); }catch(_){ return toast('Arquivo de backup inválido.', true); }
+    if(!d || !Array.isArray(d.produtos)) return toast('Arquivo de backup inválido.', true);
+    pedirConfirmacao('Restaurar backup', `Substituir os dados atuais por <b>${d.produtos.length} produto(s)</b> do arquivo “${esc(file.name)}”? Os dados atuais serão perdidos.`, 'Restaurar', ()=>{
+      db = { produtos:d.produtos, movs:Array.isArray(d.movs)?d.movs:[] };
+      save(); render(); toast('Backup restaurado.');
+    });
+  });
+});
+
+/* ================= Dados de exemplo ================= */
+function carregarExemplo(){
+  const h = hoje0(), dia = n => { const d = new Date(h); d.setDate(d.getDate()+n); return isoLocal(d); };
+  const ex = [
+    [101,'Arroz tipo 1 5kg','Alimentos','Distribuidora Sul','pct',27.90,48,15,dia(240)],
+    [102,'Feijão carioca 1kg','Alimentos','Distribuidora Sul','pct',8.49,9,12,dia(180)],
+    [103,'Café torrado 500g','Alimentos','Café Serra Verde','pct',18.75,30,10,dia(120)],
+    [104,'Leite integral 1L','Laticínios','Laticínios Minas','L',5.29,60,24,dia(12)],
+    [105,'Iogurte natural 170g','Laticínios','Laticínios Minas','un',3.10,14,10,dia(-2)],
+    [201,'Detergente neutro 500mL','Limpeza','HigiLimp','un',2.49,120,30,''],
+    [202,'Água sanitária 2L','Limpeza','HigiLimp','un',6.90,0,10,''],
+    [203,'Esponja dupla face','Limpeza','HigiLimp','un',1.80,75,20,''],
+    [301,'Sabonete 90g','Higiene','Bem Estar Ltda','un',2.20,90,25,dia(400)],
+    [302,'Creme dental 90g','Higiene','Bem Estar Ltda','un',4.60,22,20,dia(25)],
+    [401,'Refrigerante cola 2L','Bebidas','Bebidas Centro','un',9.99,36,12,dia(90)],
+    [402,'Suco de uva 1L','Bebidas','Bebidas Centro','L',12.50,8,6,dia(60)]
+  ];
+  ex.forEach(([codigo,nome,categoria,fornecedor,unidade,preco,qtd,minimo,validade])=>{
+    if(porCodigo(codigo)) return;
+    const p = {id:uid(), codigo, nome, categoria, fornecedor, unidade, preco, qtd, minimo, validade, status:'A', criadoEm:new Date().toISOString(), excluidoEm:null};
+    db.produtos.push(p); registrar(p, 'Cadastro', qtd, 'dados de exemplo');
+  });
+  save(); render(); toast('Dados de exemplo carregados.');
+}
+
+/* ================= Depósito 3D =================
+   Galpão com porta-paletes: uma estante por categoria (A, B, C…), três níveis.
+   Cada produto ocupa um palete; o número de caixas acompanha a quantidade em estoque.
+   A empilhadeira leva as caixas nas entradas e busca nas saídas. */
+const deposito = (function(){
+  const vp = $('#vp'), labelsBox = $('#vpLabels'), tip = $('#vpTip'), selp = $('#selp');
+  const PAL = ['#c99a5b','#5fa8d3','#58b39a','#c084c9','#d9675b','#d4b84a','#8d9be0','#e0884a','#7fb069','#b0b8c0'];
+  let catColor = new Map();
+
+  function calcCores(){
+    const cats = [...new Set(ativos().map(p=>p.categoria))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+    catColor = new Map(cats.map((c,i)=>[c, PAL[i % PAL.length]]));
+    $('#vpLegend').innerHTML = cats.length
+      ? cats.map((c,i)=>`<span><i style="background:${catColor.get(c)}"></i>${String.fromCharCode(65+(i%26))} · ${esc(c)}</span>`).join('')
+      : '<span>Nenhuma categoria ainda</span>';
+    return cats;
+  }
+  function falhar(msg){
+    const f = $('#vpFail'); f.hidden = false; f.firstElementChild.textContent = msg;
+    ['#vpViews','#vpNew','#selp','.vphint'].forEach(s=>{ const e = $(s); if(e) e.hidden = true; });
+    return { update(){ calcCores(); }, select(){}, anim(){} };
+  }
+  if(typeof THREE === 'undefined' || !THREE.OrbitControls)
+    return falhar('Não foi possível carregar o 3D (verifique a conexão com a internet). O restante do sistema funciona normalmente.');
+  let renderer;
+  try{ renderer = new THREE.WebGLRenderer({antialias:true}); }
+  catch(e){ return falhar('Este navegador não suporta gráficos 3D (WebGL). O restante do sistema funciona normalmente.'); }
+
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  vp.prepend(renderer.domElement);
+
+  const col = h => new THREE.Color(h).convertSRGBToLinear();
+  const scene = new THREE.Scene();
+  const ceu = document.createElement('canvas'); ceu.width = 4; ceu.height = 256;
+  { const x = ceu.getContext('2d'), g = x.createLinearGradient(0, 0, 0, 256);
+    g.addColorStop(0, '#08101c'); g.addColorStop(.5, '#14243a'); g.addColorStop(.78, '#2b3d55'); g.addColorStop(1, '#46506a');
+    x.fillStyle = g; x.fillRect(0, 0, 4, 256); }
+  const ceuTex = new THREE.CanvasTexture(ceu); ceuTex.encoding = THREE.sRGBEncoding;
+  scene.background = ceuTex;
+  scene.fog = new THREE.Fog(col(0x2b3d55), 55, 150);
+  const cam = new THREE.PerspectiveCamera(42, 1.6, 0.1, 400);
+  const controls = new THREE.OrbitControls(cam, renderer.domElement);
+  controls.enableDamping = true; controls.dampingFactor = 0.08;
+  controls.maxPolarAngle = Math.PI * 0.49; controls.minDistance = 3; controls.maxDistance = 90;
+
+  scene.add(new THREE.HemisphereLight(col(0xe6eef3), col(0x30281f), 0.75));
+  const sun = new THREE.DirectionalLight(col(0xfff2de), 0.9);
+  sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.02;
+  scene.add(sun, sun.target);
+  const fill = new THREE.DirectionalLight(col(0x9fc4ff), 0.3); fill.position.set(-12, 7, 14); scene.add(fill);
+
+  /* ---- medidas ---- */
+  const SW = 1.5, SD = 1.1, LH = 1.15, NIV = 3, GAP = 1.5;
+  const LANE = SD/2 + 2.45;      // faixa onde a empilhadeira circula
+  const APROX = 1.45;            // posição da empilhadeira com o garfo dentro da vaga
+
+  /* ---- geometrias e materiais compartilhados ---- */
+  const shared = new Set();
+  const G = g => (shared.add(g), g);
+  const gBox = G(new THREE.BoxGeometry(0.6, 0.4, 0.44));
+  const gPallet = G(new THREE.BoxGeometry(1.3, 0.12, 1.0));
+  const gPost = G(new THREE.BoxGeometry(0.08, 1, 0.08));
+  const gBeam = G(new THREE.BoxGeometry(1, 0.1, 0.06));
+  const gDeck = G(new THREE.BoxGeometry(1, 0.025, SD));
+  const gTie = G(new THREE.BoxGeometry(0.05, 0.05, SD));
+  const gGhost = G(new THREE.BoxGeometry(1.3, 0.02, 1.0));
+  const std = (c, o) => new THREE.MeshStandardMaterial(Object.assign({color:col(c), roughness:.8, metalness:0}, o||{}));
+  const mPost = std(0x2f6db3, {roughness:.5, metalness:.4});
+  const mBeam = std(0xe0702a, {roughness:.55, metalness:.3});
+  const mDeck = std(0x4a555c, {roughness:.6, metalness:.5});
+  const mPallet = std(0xa77b4f, {roughness:.95});
+  const mGhost = new THREE.MeshBasicMaterial({color:col(0x43c391), transparent:true, opacity:.16, depthWrite:false});
+  const boxMats = new Map();
+  const matBox = hex => { if(!boxMats.has(hex)) boxMats.set(hex, std(hex, {roughness:.85})); return boxMats.get(hex); };
+  const own = m => (m.userData.own = true, m);
+
+  function canvasTex(w, h, draw){
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    draw(c.getContext('2d'), w, h);
+    const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 4;
+    return t;
+  }
+  function mesh(geo, mat, x, y, z, parent, sombra){
+    const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z);
+    if(sombra !== false){ m.castShadow = true; m.receiveShadow = true; }
+    (parent || world).add(m); return m;
+  }
+
+  /* ---- marcadores de seleção / hover ---- */
+  const edgeGeo = G(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.44, LH - 0.12, 1.14)));
+  const selEdges = new THREE.LineSegments(edgeGeo, new THREE.LineBasicMaterial({color:col(0xf2b33d), transparent:true}));
+  const hovEdges = new THREE.LineSegments(edgeGeo, new THREE.LineBasicMaterial({color:0xffffff, transparent:true, opacity:.45}));
+  selEdges.visible = hovEdges.visible = false;
+  scene.add(selEdges, hovEdges);
+
+  /* ---- empilhadeira ---- */
+  const fk = (function(){
+    const g = new THREE.Group();
+    const yel = std(0xf2b33d, {roughness:.45, metalness:.2}), dark = std(0x22292d, {roughness:.6, metalness:.5}), tire = std(0x111417, {roughness:.95});
+    const add = (geo, mat, x, y, z, p) => mesh(geo, mat, x, y, z, p || g);
+    add(new THREE.BoxGeometry(1.0, 0.55, 1.3), yel, 0, 0.52, -0.05);
+    add(new THREE.BoxGeometry(1.04, 0.55, 0.36), dark, 0, 0.56, -0.78);
+    add(new THREE.BoxGeometry(0.5, 0.12, 0.45), dark, 0, 0.86, -0.22);
+    add(new THREE.BoxGeometry(0.46, 0.42, 0.08), dark, 0, 1.08, -0.44);
+    add(new THREE.BoxGeometry(0.06, 0.4, 0.06), dark, 0, 1.0, 0.22).rotation.x = -0.5;
+    [[-.45,-.6],[.45,-.6],[-.45,.42],[.45,.42]].forEach(([x,z]) => add(new THREE.BoxGeometry(.06, 1.1, .06), dark, x, 1.35, z));
+    add(new THREE.BoxGeometry(1.0, 0.05, 1.1), dark, 0, 1.92, -0.09);
+    [-.32, .32].forEach(x => add(new THREE.BoxGeometry(.08, 2.7, .1), dark, x, 1.4, 0.72));
+    add(new THREE.BoxGeometry(.72, .06, .08), dark, 0, 2.74, 0.72);
+    const wg = new THREE.CylinderGeometry(.25, .25, .2, 18); wg.rotateZ(Math.PI/2);
+    [[-.53,.42],[.53,.42],[-.53,-.52],[.53,-.52]].forEach(([x,z]) => add(wg, tire, x, .25, z));
+    const beacon = add(new THREE.CylinderGeometry(.06, .06, .1, 10), new THREE.MeshStandardMaterial({color:0xff8a00, emissive:0xff6a00, emissiveIntensity:.3}), 0.32, 1.99, -0.45);
+    const car = new THREE.Group(); car.position.set(0, 0.06, 0.8); g.add(car);
+    add(new THREE.BoxGeometry(.72, .55, .05), dark, 0, .3, 0, car);
+    [-.24, .24].forEach(x => add(new THREE.BoxGeometry(.1, .04, 1.0), dark, x, 0.02, .52, car));
+    const cargo = new THREE.Group(); cargo.position.set(0, 0.04, 0.55); car.add(cargo);
+    add(gPallet, mPallet, 0, 0.06, 0, cargo);
+    const cargoBoxes = [[-.31,.23],[.31,.23],[-.31,-.23],[.31,-.23]].map(([x,z]) => add(gBox, matBox(PAL[0]), x, 0.32, z, cargo));
+    cargo.visible = false;
+    scene.add(g);
+    return {g, car, cargo, cargoBoxes, beacon, x:0, z:LANE, h:Math.PI, lift:0.06, steps:[]};
+  })();
+
+  /* ---- estado ---- */
+  let world = new THREE.Group(); scene.add(world);
+  const fx = new THREE.Group(); scene.add(fx);
+  let pickables = [], slots = new Map(), labelEls = [], prevBoxes = new Map(), anims = [];
+  let pendingTask = null, selId = null, focusPending = false, primeiro = true, layoutW = 10;
+  let park = {x:6, z:LANE + 2.4}, doca = {}, portaDoca = null, portaDocaAlvo = 0, portaDocaV = 0, relogio = null, fly = null;
+
+  function limparMundo(){
+    world.traverse(o => {
+      if(o.geometry && !shared.has(o.geometry)) o.geometry.dispose();
+      if(o.material && o.material.userData && o.material.userData.own){ if(o.material.map) o.material.map.dispose(); o.material.dispose(); }
+    });
+    scene.remove(world);
+    world = new THREE.Group(); scene.add(world);
+    labelsBox.innerHTML = ''; labelEls = []; pickables = []; slots = new Map();
+    anims = anims.filter(a => a.fx);   // animações de caixas antigas do mundo deixam de valer
+  }
+
+  /* ---- galpão, pátio, rua e decoração ---- */
+  function texRepetida(tam, draw, rx, ry){
+    const t = canvasTex(tam, tam, draw);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry);
+    return t;
+  }
+  function ruido(x, w, h, base, n, cores){
+    x.fillStyle = base; x.fillRect(0, 0, w, h);
+    for(let i = 0; i < n; i++){ x.fillStyle = cores[i % cores.length]; x.fillRect(Math.random()*w, Math.random()*h, 1 + Math.random()*2, 1 + Math.random()*2); }
+  }
+  function brilho(r, g, b, a){
+    return canvasTex(128, 128, (x, w, h) => {
+      const gr = x.createRadialGradient(w/2, h/2, 0, w/2, h/2, w/2);
+      gr.addColorStop(0, `rgba(${r},${g},${b},${a})`); gr.addColorStop(1, `rgba(${r},${g},${b},0)`);
+      x.fillStyle = gr; x.fillRect(0, 0, w, h);
+    });
+  }
+  const mBrilhoQuente = new THREE.MeshBasicMaterial({map:brilho(255, 214, 150, .32), transparent:true, depthWrite:false, blending:THREE.AdditiveBlending});
+  const mTronco = std(0x5a4130, {roughness:1});
+  const mCopa = [std(0x2f5d3a, {roughness:1, flatShading:true}), std(0x3b6e45, {roughness:1, flatShading:true}), std(0x26503a, {roughness:1, flatShading:true})];
+  const gCopa = G(new THREE.IcosahedronGeometry(1, 0));
+  function arvore(x, z, s){
+    mesh(new THREE.CylinderGeometry(.1*s, .16*s, 1.4*s, 7), mTronco, x, .7*s, z);
+    const c = mesh(gCopa, mCopa[Math.floor(Math.abs(x*7 + z*3)) % 3], x, 2.1*s, z); c.scale.set(1.15*s, 1.35*s, 1.15*s); c.rotation.y = x + z;
+    const c2 = mesh(gCopa, mCopa[Math.floor(Math.abs(x + z*5)) % 3], x + .2*s, 2.95*s, z - .1*s); c2.scale.setScalar(.75*s);
+  }
+  function poste(x, z, braco){
+    const esc = own(std(0x2a3136, {metalness:.6, roughness:.5}));
+    mesh(new THREE.CylinderGeometry(.07, .1, 5, 8), esc, x, 2.5, z);
+    mesh(new THREE.BoxGeometry(Math.abs(braco), .08, .08), esc, x + braco/2, 4.95, z);
+    mesh(new THREE.BoxGeometry(.55, .12, .26), own(new THREE.MeshBasicMaterial({color:0xffe2a8})), x + braco, 4.88, z, world, false);
+    const b = mesh(new THREE.PlaneGeometry(7, 7), mBrilhoQuente, x + braco, 0.03, z, world, false); b.rotation.x = -Math.PI/2;
+  }
+  function carro(cor, x, z, h){
+    const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = h; world.add(g);
+    const corpo = own(std(cor, {roughness:.35, metalness:.5})), vidro = own(std(0x1b2a36, {roughness:.1, metalness:.8})), pneu = own(std(0x111417, {roughness:.95}));
+    mesh(new THREE.BoxGeometry(1.8, 0.55, 4.1), corpo, 0, 0.62, 0, g);
+    mesh(new THREE.BoxGeometry(1.62, 0.5, 2.1), vidro, 0, 1.12, -0.2, g);
+    mesh(new THREE.BoxGeometry(1.64, 0.06, 1.9), corpo, 0, 1.4, -0.25, g);
+    const wg = new THREE.CylinderGeometry(.34, .34, .24, 16); wg.rotateZ(Math.PI/2);
+    [[-.85, 1.3], [.85, 1.3], [-.85, -1.3], [.85, -1.3]].forEach(([wx, wz]) => mesh(wg, pneu, wx, .34, wz, g));
+    [-.6, .6].forEach(wx => mesh(new THREE.BoxGeometry(.3, .12, .04), own(new THREE.MeshBasicMaterial({color:0xfff3d0})), wx, .72, 2.06, g, false));
+  }
+
+  function construirGalpao(W){
+    const half = W/2, x0 = -half - 6, xR = half + 6.5, zb = -SD/2 - 2.2, zf = 10, HW = 7;
+    const fw = xR - x0, fd = zf - zb, cx = (x0 + xR)/2, cz = (zb + zf)/2;
+    const xRoad = xR + 10;
+    doca = {xR, z:LANE, xIn:xR - 2.4, xFk:xR - 0.1, truckX:xR + 3.15, xRoad};
+    park = {x: half + 2.4, z: LANE + 2.4};
+
+    // ---------- exterior: grama, pátio, rua, estacionamento ----------
+    const grama = mesh(new THREE.PlaneGeometry(300, 300), own(std(0xffffff, {roughness:1, map:texRepetida(128, (x, w, h) => ruido(x, w, h, '#1f2d21', 900, ['#263824', '#1a261c', '#2b3f27']), 60, 60)})), cx + 10, -0.03, cz, world, false);
+    grama.rotation.x = -Math.PI/2; grama.receiveShadow = true;
+    const asfalto = (w, d) => own(std(0xffffff, {roughness:.95, map:texRepetida(128, (x, cw, ch) => ruido(x, cw, ch, '#24292d', 700, ['#2d3337', '#1d2124', '#30363a']), w/4, d/4)}));
+    const plano = (w, d, mat, x, y, z) => { const m = mesh(new THREE.PlaneGeometry(w, d), mat, x, y, z, world, false); m.rotation.x = -Math.PI/2; m.receiveShadow = true; return m; };
+    plano(7, 200, asfalto(7, 200), xRoad, -0.01, 10);
+    const tracejado = canvasTex(32, 128, (x, w, h) => { x.clearRect(0, 0, w, h); x.fillStyle = '#e8e2c8'; x.fillRect(8, 0, 16, 64); });
+    tracejado.wrapS = tracejado.wrapT = THREE.RepeatWrapping; tracejado.repeat.set(1, 50);
+    plano(0.16, 200, own(new THREE.MeshBasicMaterial({map:tracejado, transparent:true, depthWrite:false})), xRoad, 0.0, 10);
+    const mGuia = own(std(0x8e979d, {roughness:.8}));
+    const guia = (x, z1, z2) => mesh(new THREE.BoxGeometry(.3, .16, z2 - z1), mGuia, x, .08, (z1 + z2)/2);
+    guia(xRoad - 3.65, -90, LANE - 6.2); guia(xRoad - 3.65, LANE + 6.2, 110);
+    guia(xRoad + 3.65, -90, LANE - 9.5); guia(xRoad + 3.65, LANE + 9.5, 110);
+    // pátio da doca
+    plano(xRoad - 3.5 - xR, 12.4, asfalto(9, 12), (xR + xRoad - 3.5)/2, -0.005, LANE);
+    const amareloPiso = own(new THREE.MeshBasicMaterial({color:col(0xe2b623)}));
+    [-1.55, 1.55].forEach(dz => plano(6.5, 0.12, amareloPiso, xR + 3.4, 0.002, LANE + dz));
+    // estacionamento do outro lado da rua
+    plano(8, 19, asfalto(8, 19), xRoad + 7.6, -0.005, LANE);
+    const branco = own(new THREE.MeshBasicMaterial({color:0xd9dde0}));
+    for(let i = 0; i <= 6; i++) plano(4.6, 0.1, branco, xRoad + 9.2, 0.002, LANE - 8.4 + i*2.8);
+    carro(0x2f7fb5, xRoad + 9.2, LANE - 5.6, -Math.PI/2);
+    carro(0xb83b3b, xRoad + 9.2, LANE + 2.8, -Math.PI/2);
+    carro(0xd9d9d9, xRoad + 9.2, LANE + 5.6, -Math.PI/2);
+    // postes e árvores
+    for(let z = -30; z <= 34; z += 13) poste(xRoad - 4.1, z, 1.3);
+    [[xRoad + 14, -8, 1.3], [xRoad + 15.5, 3, 1.1], [xRoad + 13.5, 12, 1.4], [xRoad + 16, 20, 1.2], [xRoad + 13, -18, 1.2],
+     [x0 - 4, -6, 1.3], [x0 - 5.5, 3, 1.1], [x0 - 4.2, 9, 1.4], [x0 - 6, 16, 1.2],
+     [x0 + 4, zb - 5, 1.2], [cx, zb - 6, 1.4], [xR - 3, zb - 5, 1.1], [cx - 8, zb - 5.5, 1.3]].forEach(([x, z, s]) => arvore(x, z, s));
+
+    // ---------- piso de concreto ----------
+    const concreto = texRepetida(256, (x, w, h) => {
+      ruido(x, w, h, '#2c3438', 1400, ['#333c41', '#262d31', '#363f44']);
+      x.strokeStyle = 'rgba(0,0,0,.35)'; x.lineWidth = 2; x.strokeRect(0, 0, w, h);
+    }, fw/4, fd/4);
+    const laje = mesh(new THREE.BoxGeometry(fw, 0.18, fd), own(std(0xffffff, {roughness:.92, map:concreto})), cx, -0.09, cz, world, false);
+    laje.receiveShadow = true;
+    const amarelo = own(new THREE.MeshBasicMaterial({color:col(0xe2b623)}));
+    plano(W + 3, 0.09, amarelo, 0, 0.004, SD/2 + 0.35);
+    plano(xR - 0.3 - (-half - 1.5), 0.09, amarelo, (xR - 0.3 - half - 1.5)/2, 0.004, LANE + 1.3);
+    // faixa zebrada na entrada da doca
+    const zebra = canvasTex(256, 256, (x, w, h) => {
+      x.clearRect(0, 0, w, h); x.fillStyle = 'rgba(226,182,35,.75)';
+      for(let i = -h; i < w; i += 48){ x.beginPath(); x.moveTo(i, h); x.lineTo(i + 24, h); x.lineTo(i + 24 + h, 0); x.lineTo(i + h, 0); x.fill(); }
+      x.strokeStyle = 'rgba(226,182,35,.9)'; x.lineWidth = 8; x.strokeRect(4, 4, w - 8, h - 8);
+    });
+    plano(2.4, 3.3, own(new THREE.MeshBasicMaterial({map:zebra, transparent:true, depthWrite:false})), xR - 1.35, 0.005, LANE);
+    const textoPiso = (txt, w, h, x, z, rot) => {
+      const t = canvasTex(512, 128, (c, cw, ch) => { c.fillStyle = 'rgba(226,182,35,.85)'; c.font = '700 64px "Segoe UI", Arial, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, cw/2, ch/2 + 4); });
+      const m = plano(w, h, own(new THREE.MeshBasicMaterial({map:t, transparent:true, depthWrite:false})), x, 0.006, z); m.rotation.z = rot || 0;
+    };
+    textoPiso('RECEBIMENTO · EXPEDIÇÃO', 4.2, 1.05, xR - 3.6, LANE - 1.25);
+    // vaga da empilhadeira
+    const vaga = canvasTex(256, 384, (x, w, h) => {
+      x.clearRect(0, 0, w, h); x.strokeStyle = 'rgba(226,182,35,.9)'; x.lineWidth = 10; x.setLineDash([26, 16]); x.strokeRect(8, 8, w - 16, h - 16);
+      x.setLineDash([]); x.fillStyle = 'rgba(226,182,35,.8)'; x.font = '700 120px "Segoe UI", Arial'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('P', w/2, h - 90);
+    });
+    plano(1.7, 2.6, own(new THREE.MeshBasicMaterial({map:vaga, transparent:true, depthWrite:false})), park.x, 0.005, park.z - 0.1);
+
+    // ---------- paredes ----------
+    const mWall = own(std(0x1d282e, {roughness:.92}));
+    const mWallExt = own(std(0x2a363d, {roughness:.9}));
+    mesh(new THREE.BoxGeometry(fw + 0.5, HW, 0.25), mWallExt, cx, HW/2, zb - 0.125).receiveShadow = true;
+    mesh(new THREE.BoxGeometry(0.25, HW, fd), mWallExt, x0 - 0.125, HW/2, cz).receiveShadow = true;
+    const faceInt = (w, h, x, y, z, ry) => { const m = mesh(new THREE.PlaneGeometry(w, h), mWall, x, y, z, world, false); m.rotation.y = ry; m.receiveShadow = true; return m; };
+    faceInt(fw, HW, cx, HW/2, zb + 0.005, 0);
+    faceInt(fd, HW, x0 + 0.005, HW/2, cz, Math.PI/2);
+    const rodape = own(std(0x121a1f));
+    mesh(new THREE.BoxGeometry(fw, 0.9, 0.06), rodape, cx, 0.45, zb + 0.03, world, false);
+    mesh(new THREE.BoxGeometry(0.06, 0.9, fd), rodape, x0 + 0.03, 0.45, cz, world, false);
+    // janelas altas
+    const janelas = canvasTex(512, 64, (x, w, h) => {
+      x.fillStyle = '#111c24'; x.fillRect(0, 0, w, h);
+      for(let i = 0; i < 8; i++){
+        const g = x.createLinearGradient(0, 6, 0, h - 6); g.addColorStop(0, '#7c9bb5'); g.addColorStop(1, '#3e566b');
+        x.fillStyle = g; x.fillRect(i*64 + 5, 6, 54, h - 12);
+      }
+    });
+    janelas.wrapS = THREE.RepeatWrapping;
+    const jb = janelas.clone(); jb.needsUpdate = true; jb.wrapS = THREE.RepeatWrapping; jb.repeat.set(fw/5, 1);
+    const jl = janelas.clone(); jl.needsUpdate = true; jl.wrapS = THREE.RepeatWrapping; jl.repeat.set(fd/5, 1);
+    faceInt(fw - 1, 0.9, cx, 5.7, zb + 0.02, 0).material = own(new THREE.MeshBasicMaterial({map:jb}));
+    faceInt(fd - 1, 0.9, x0 + 0.02, 5.7, cz, Math.PI/2).material = own(new THREE.MeshBasicMaterial({map:jl}));
+    // parede direita em corte (baixa) com portal da doca
+    const xw = xR + 0.125;
+    const muro = (z1, z2) => mesh(new THREE.BoxGeometry(0.25, 1.0, z2 - z1), mWallExt, xw, 0.5, (z1 + z2)/2);
+    muro(zb - 0.25, LANE - 1.95); muro(LANE + 1.95, zf);
+    const listras = canvasTex(64, 256, (x, w, h) => {
+      for(let i = -4; i < 20; i++){ x.fillStyle = i % 2 ? '#111' : '#f2b33d'; x.beginPath(); x.moveTo(0, i*24); x.lineTo(w, i*24 - 30); x.lineTo(w, i*24 - 6); x.lineTo(0, i*24 + 24); x.fill(); }
+    });
+    const mList = own(new THREE.MeshStandardMaterial({map:listras, roughness:.6}));
+    [-1.85, 1.85].forEach(dz => mesh(new THREE.BoxGeometry(0.3, 4.3, 0.22), mList, xw, 2.15, LANE + dz));
+    mesh(new THREE.BoxGeometry(0.34, 0.5, 3.94), mWallExt, xw, 4.35, LANE);
+    const porta = canvasTex(256, 256, (x, w, h) => {
+      x.fillStyle = '#8f9aa1'; x.fillRect(0, 0, w, h);
+      for(let y = 0; y < h; y += 16){ x.fillStyle = '#6d777d'; x.fillRect(0, y, w, 3); x.fillStyle = '#a7b1b7'; x.fillRect(0, y + 3, w, 2); }
+    });
+    portaDoca = mesh(new THREE.BoxGeometry(0.08, 3.9, 3.46), own(new THREE.MeshStandardMaterial({map:porta, roughness:.55, metalness:.45})), xw, 1.95, LANE);
+    const sy = 1 - 0.94*portaDocaV; portaDoca.scale.y = sy; portaDoca.position.y = 4.1 - 3.9*sy/2;
+    [-1.3, 1.3].forEach(dz => mesh(new THREE.BoxGeometry(0.3, 0.45, 0.35), own(std(0x111111)), xR + 0.4, 0.75, LANE + dz));
+    const placaDoca = canvasTex(512, 128, (x, w, h) => {
+      x.fillStyle = '#0f171b'; x.fillRect(0, 0, w, h); x.fillStyle = '#43c391'; x.fillRect(0, 0, 14, h);
+      x.fillStyle = '#e3ecef'; x.font = '700 62px "Segoe UI", Arial, sans-serif'; x.textBaseline = 'middle'; x.fillText('DOCA 1', 40, 68);
+    });
+    const mPlacaDoca = own(new THREE.MeshBasicMaterial({map:placaDoca}));
+    const pd1 = mesh(new THREE.PlaneGeometry(2.2, 0.55), mPlacaDoca, xw - 0.18, 4.95, LANE, world, false); pd1.rotation.y = -Math.PI/2;
+    const pd2 = mesh(new THREE.PlaneGeometry(2.2, 0.55), mPlacaDoca, xw + 0.18, 4.95, LANE, world, false); pd2.rotation.y = Math.PI/2;
+    mesh(new THREE.BoxGeometry(0.1, 0.55, 2.3), mWallExt, xw, 4.95, LANE);
+    // pilares das quinas do corte
+    const mPilar = own(std(0x2f6db3, {roughness:.5, metalness:.4}));
+    [[x0 - 0.12, zf], [xw, zf], [xw, zb - 0.12]].forEach(([x, z]) => mesh(new THREE.BoxGeometry(0.3, HW, 0.3), mPilar, x, HW/2, z));
+    // viga de topo nas paredes (o telhado fica aberto para enxergar o interior)
+    const mTrel = own(std(0x3a464d, {metalness:.6, roughness:.5}));
+    mesh(new THREE.BoxGeometry(fw + 0.5, 0.3, 0.4), mTrel, cx, HW + 0.15, zb - 0.1, world, false);
+    mesh(new THREE.BoxGeometry(0.4, 0.3, fd), mTrel, x0 - 0.1, HW + 0.15, cz, world, false);
+
+    // ---------- iluminação interna ----------
+    const mCupula = own(std(0x30383d, {metalness:.6, roughness:.4, side:THREE.DoubleSide}));
+    const mLuz = own(new THREE.MeshBasicMaterial({color:0xfff1d0}));
+    // luminárias penduradas num cabo de aço junto à parede do fundo
+    mesh(new THREE.BoxGeometry(fw, .03, .03), mCupula, cx, 6.6, zb + 0.9, world, false);
+    for(let x = x0 + 3; x < xR - 1; x += 5){
+      mesh(new THREE.CylinderGeometry(.14, .5, .32, 18, 1, true), mCupula, x, 6.0, zb + 0.9, world, false);
+      const b = mesh(new THREE.CircleGeometry(.44, 18), mLuz, x, 5.86, zb + 0.9, world, false); b.rotation.x = Math.PI/2;
+      mesh(new THREE.BoxGeometry(.02, .45, .02), mCupula, x, 6.38, zb + 0.9, world, false);
+    }
+    for(let x = x0 + 3; x < xR - 1; x += 5) [1.8, 7.5].forEach(z => {
+      const p = mesh(new THREE.PlaneGeometry(6.5, 6.5), mBrilhoQuente, x, 0.012, z, world, false); p.rotation.x = -Math.PI/2;
+    });
+
+    // ---------- escritório no canto ----------
+    const ox = x0 + 2.2, oz = zb + 1.7;
+    const mOf = own(std(0x3c4a53, {roughness:.7})), mOfVidro = own(new THREE.MeshStandardMaterial({color:0xffe2a8, emissive:0xffcf80, emissiveIntensity:.55, roughness:.2}));
+    mesh(new THREE.BoxGeometry(3.6, 2.8, 3.0), mOf, ox, 1.4, oz);
+    mesh(new THREE.BoxGeometry(3.8, 0.12, 3.2), own(std(0x2a3339)), ox, 2.86, oz);
+    mesh(new THREE.BoxGeometry(2.0, 1.0, 0.04), mOfVidro, ox - 0.5, 1.65, oz + 1.51, world, false);
+    mesh(new THREE.BoxGeometry(0.8, 2.0, 0.04), own(std(0x1c2328)), ox + 1.2, 1.0, oz + 1.51, world, false);
+    mesh(new THREE.BoxGeometry(0.04, 1.0, 1.8), mOfVidro, ox + 1.81, 1.65, oz, world, false);
+    const placaOf = canvasTex(512, 96, (x, w, h) => { x.fillStyle = '#0f171b'; x.fillRect(0, 0, w, h); x.fillStyle = '#5cc8e6'; x.fillRect(0, 0, 12, h); x.fillStyle = '#e3ecef'; x.font = '700 54px "Segoe UI", Arial, sans-serif'; x.textBaseline = 'middle'; x.fillText('ESCRITÓRIO', 34, 52); });
+    mesh(new THREE.PlaneGeometry(2.0, 0.38), own(new THREE.MeshBasicMaterial({map:placaOf})), ox, 2.45, oz + 1.53, world, false);
+    mesh(new THREE.BoxGeometry(0.9, 0.5, 0.7), own(std(0xb7c0c6, {metalness:.5, roughness:.4})), ox - 0.8, 3.17, oz);   // ar-condicionado
+    mesh(new THREE.CylinderGeometry(.22, .18, .4, 12), own(std(0x6b4f3a)), ox + 2.1, .2, oz + 1.5);
+    const vaso = mesh(gCopa, mCopa[1], ox + 2.1, .75, oz + 1.5); vaso.scale.set(.38, .5, .38);
+
+    // ---------- relógio de parede ----------
+    const rx = ox, ry = 4.6, rz = zb + 0.03;
+    const face = canvasTex(256, 256, (x, w, h) => {
+      x.fillStyle = '#e9edf0'; x.beginPath(); x.arc(128, 128, 120, 0, Math.PI*2); x.fill();
+      x.lineWidth = 12; x.strokeStyle = '#1c2226'; x.stroke();
+      x.fillStyle = '#1c2226'; for(let i = 0; i < 12; i++){ x.save(); x.translate(128, 128); x.rotate(i*Math.PI/6); x.fillRect(-4, -104, 8, i % 3 ? 14 : 24); x.restore(); }
+    });
+    mesh(new THREE.CircleGeometry(0.55, 32), own(new THREE.MeshBasicMaterial({map:face, transparent:true})), rx, ry, rz, world, false);
+    const mPont = own(new THREE.MeshBasicMaterial({color:0x1c2226}));
+    const hP = new THREE.Group(), mP = new THREE.Group(); hP.position.set(rx, ry, rz + 0.02); mP.position.set(rx, ry, rz + 0.03); world.add(hP, mP);
+    mesh(new THREE.BoxGeometry(.05, .28, .01), mPont, 0, .12, 0, hP, false);
+    mesh(new THREE.BoxGeometry(.035, .42, .01), mPont, 0, .19, 0, mP, false);
+    relogio = {h:hP, m:mP};
+
+    // ---------- área de expedição (fundo à direita) ----------
+    for(let i = 0; i < 6; i++) mesh(gPallet, mPallet, xR - 1.3, 0.06 + i*0.13, zb + 1.0, world).rotation.y = (i % 2 ? 0.04 : -0.03);
+    const bx = xR - 3.2, bz = zb + 1.3;
+    mesh(gPallet, mPallet, bx, 0.06, bz, world);
+    const papelao = matBox('#b8874f');
+    for(let i = 0; i < 8; i++){ const L = Math.floor(i/4), w = i % 4; mesh(gBox, papelao, bx + (w % 2 ? .31 : -.31), 0.32 + L*0.41, bz + (w < 2 ? .23 : -.23), world); }
+    mesh(new THREE.BoxGeometry(1.3, 0.86, 0.98), own(new THREE.MeshStandardMaterial({color:0xdde8ee, transparent:true, opacity:.18, roughness:.2, depthWrite:false})), bx, 0.55, bz, world, false);
+    // bancada de embalagem
+    const tx = half + 1.6, tz = zb + 0.9, mMesa = own(std(0x8a6a48, {roughness:.8})), mPe = own(std(0x30383d, {metalness:.6}));
+    mesh(new THREE.BoxGeometry(1.9, 0.06, 0.8), mMesa, tx, 0.92, tz);
+    [[-.85, -.32], [.85, -.32], [-.85, .32], [.85, .32]].forEach(([dx, dz]) => mesh(new THREE.BoxGeometry(.05, .9, .05), mPe, tx + dx, .45, tz + dz));
+    mesh(new THREE.BoxGeometry(.5, .3, .4), papelao, tx - .45, 1.1, tz);
+    mesh(new THREE.BoxGeometry(.35, .22, .3), papelao, tx + .1, 1.06, tz + .1);
+    const fita = mesh(new THREE.TorusGeometry(.08, .035, 8, 16), own(std(0xc9b48a)), tx + .55, .98, tz - .1); fita.rotation.x = Math.PI/2;
+
+    // ---------- segurança ----------
+    const ext = 3;
+    mesh(new THREE.CylinderGeometry(.13, .13, .55, 16), own(std(0xc62828, {roughness:.4})), x0 + 0.2, 0.75, ext, world);
+    mesh(new THREE.CylinderGeometry(.05, .07, .12, 10), own(std(0x111111)), x0 + 0.2, 1.08, ext, world);
+    const extPlaca = canvasTex(128, 192, (x, w, h) => {
+      x.fillStyle = '#c62828'; x.fillRect(0, 0, w, h); x.fillStyle = '#fff'; x.font = '700 22px "Segoe UI", Arial, sans-serif'; x.textAlign = 'center';
+      x.fillText('EXTINTOR', w/2, h - 24); x.beginPath(); x.arc(w/2, 70, 34, 0, Math.PI*2); x.fill(); x.fillStyle = '#c62828'; x.fillRect(w/2 - 12, 50, 24, 50);
+    });
+    const ep = mesh(new THREE.PlaneGeometry(.4, .6), own(new THREE.MeshBasicMaterial({map:extPlaca})), x0 + 0.04, 1.65, ext, world, false); ep.rotation.y = Math.PI/2;
+    const epi = canvasTex(256, 320, (x, w, h) => {
+      x.fillStyle = '#1565c0'; x.fillRect(0, 0, w, h); x.fillStyle = '#fff'; x.textAlign = 'center';
+      x.beginPath(); x.arc(w/2, 120, 70, Math.PI, 0); x.fill(); x.fillRect(w/2 - 90, 116, 180, 18);
+      x.font = '700 40px "Segoe UI", Arial, sans-serif'; x.fillText('USE EPI', w/2, 220); x.font = '500 22px "Segoe UI", Arial, sans-serif'; x.fillText('capacete e botina', w/2, 262);
+    });
+    const ep2 = mesh(new THREE.PlaneGeometry(.6, .75), own(new THREE.MeshBasicMaterial({map:epi})), x0 + 0.04, 2.2, 6.5, world, false); ep2.rotation.y = Math.PI/2;
+    const mTambor = own(std(0x1f5fa8, {roughness:.5, metalness:.3}));
+    [[x0 + 0.6, 9.2], [x0 + 1.25, 9.4], [x0 + 0.65, 9.9]].forEach(([x, z]) => mesh(new THREE.CylinderGeometry(.3, .3, .9, 18), mTambor, x, .45, z));
+    const cone = own(std(0xff6d1f, {roughness:.6}));
+    [[park.x - 1.3, park.z + 1.2], [park.x + 1.3, park.z + 1.2]].forEach(([x, z]) => {
+      mesh(new THREE.ConeGeometry(.16, .45, 16), cone, x, .225, z);
+      mesh(new THREE.BoxGeometry(.36, .03, .36), own(std(0x222222)), x, .015, z);
+    });
+
+    // ---------- luz e sombras ----------
+    sun.position.set(cx + 8, 22, 16); sun.target.position.set(cx + 4, 0, 2);
+    const sc = sun.shadow.camera, r = Math.max(22, fw/2 + 14);
+    sc.left = -r; sc.right = r; sc.top = r; sc.bottom = -r; sc.near = 1; sc.far = 80; sc.updateProjectionMatrix();
+  }
+
+  /* ---- estantes ---- */
+  function placaEstante(letra, texto, hex, largura){
+    const t = canvasTex(512, 96, (x, w, h) => {
+      x.fillStyle = '#0f171b'; x.fillRect(0, 0, w, h);
+      x.fillStyle = hex; x.fillRect(0, 0, 96, h);
+      x.fillStyle = '#0d1519'; x.font = '700 62px "Segoe UI", Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(letra, 48, 52);
+      x.fillStyle = '#e3ecef'; x.font = '600 40px "Segoe UI", Arial, sans-serif'; x.textAlign = 'left';
+      let s = texto.toUpperCase(); while(x.measureText(s).width > 390 && s.length > 4) s = s.slice(0, -2) + '…';
+      x.fillText(s, 116, 52);
+    });
+    return own(new THREE.MeshBasicMaterial({map:t}));
+  }
+  const nCaixas = p => p.qtd <= 0 ? 0 : Math.max(1, Math.min(8, Math.ceil(p.qtd / Math.max(p.minimo*3, 24) * 8)));
+  const posCaixa = (sx, base, i) => {
+    const L = Math.floor(i/4), w = i % 4;
+    return new THREE.Vector3(sx + (w % 2 ? .31 : -.31), base + 0.12 + 0.2 + L*0.41, w < 2 ? .23 : -.23);
+  };
+  function classeTag(p){
+    if(p.qtd === 0) return 'zero';
+    const d = diasAte(p.validade); if(d !== null && d < 0) return 'exp';
+    if(estaBaixo(p)) return 'low';
+    return '';
+  }
+  function addLabel(texto, cls, v, data){
+    const el = document.createElement('button');
+    el.className = 'tg ' + cls; el.textContent = texto; el.type = 'button';
+    Object.assign(el.dataset, data);
+    labelsBox.appendChild(el); labelEls.push({el, v, pid:data.pid});
+  }
+
+  function construirEstante(r){
+    const C = r.C, H = NIV*LH + 0.1, larg = C*SW, cx = r.x0 + larg/2;
+    for(let c = 0; c <= C; c++){
+      const x = r.x0 + c*SW;
+      [-SD/2, SD/2].forEach(z => { const m = mesh(gPost, mPost, x, H/2, z); m.scale.y = H; });
+      [0.4, H/2, H - 0.25].forEach(y => mesh(gTie, mPost, x, y, 0));
+    }
+    for(let n = 1; n <= NIV; n++){
+      [-SD/2, SD/2].forEach(z => { const b = mesh(gBeam, mBeam, cx, n*LH - 0.05, z); b.scale.x = larg; });
+      if(n < NIV){ const d = mesh(gDeck, mDeck, cx, n*LH - 0.0125, 0); d.scale.x = larg - 0.02; }
+    }
+    const pw = Math.min(larg - 0.2, 4.2);
+    mesh(new THREE.PlaneGeometry(pw, pw*96/512), placaEstante(r.letra, r.cat || 'Estante vazia', r.cat ? catColor.get(r.cat) : '#5b6f78', pw), cx, H + 0.38, SD/2, world, false);
+    [-pw/2 + 0.15, pw/2 - 0.15].forEach(dx => mesh(new THREE.BoxGeometry(.02, .3, .02), mPost, cx + dx, H + 0.12, SD/2, world, false));
+
+    const mat = matBox(r.cat ? catColor.get(r.cat) : PAL[0]);
+    for(let k = 0; k < C*NIV; k++){
+      const nv = Math.floor(k / C), cIdx = k % C;
+      const sx = r.x0 + (cIdx + 0.5)*SW, base = nv*LH;
+      const p = r.prods[k];
+      if(p){
+        const pal = mesh(gPallet, mPallet, sx, base + 0.06, 0); pal.userData.pid = p.id; pickables.push(pal);
+        const n = nCaixas(p), pos = [];
+        for(let i = 0; i < n; i++){
+          const v = posCaixa(sx, base, i); pos.push(v);
+          const b = mesh(gBox, mat, v.x, v.y, v.z); b.userData.pid = p.id; pickables.push(b);
+          r.novas.push({b, v, i, pid:p.id});
+        }
+        slots.set(p.id, {x:sx, base, nivel:nv, n, pos, mat});
+        addLabel(String(p.codigo), classeTag(p), new THREE.Vector3(sx, nv ? base - 0.05 : 0.05, SD/2 + 0.06), {pid:p.id});
+      } else {
+        const g = mesh(gGhost, mGhost, sx, base + 0.012, 0, world, false); g.userData = {ghost:true, cat:r.cat}; pickables.push(g);
+        if(k === r.prods.length) addLabel('+', 'add', new THREE.Vector3(sx, base + 0.3, 0.1), {cat:r.cat || ''});   // só a próxima vaga ganha o "+"
+      }
+    }
+  }
+
+  /* ---- reconstrução a partir dos dados ---- */
+  function update(){
+    const cats = calcCores();
+    const a = ativos();
+    const task = pendingTask; pendingTask = null;
+    limparMundo();
+    let x = 0; const racks = [];
+    cats.forEach((cat, i) => {
+      const prods = a.filter(p => p.categoria === cat).sort((p, q) => p.codigo - q.codigo);
+      const C = Math.max(2, Math.ceil((prods.length + 1) / NIV));
+      racks.push({cat, prods, C, x0:x, letra:String.fromCharCode(65 + (i % 26)), novas:[]});
+      x += C*SW + GAP;
+    });
+    if(!racks.length){ racks.push({cat:null, prods:[], C:3, x0:0, letra:'A', novas:[]}); x = 3*SW + GAP; }
+    const W = x - GAP;
+    const mudouLargura = Math.abs(W - layoutW) > 0.01; layoutW = W;
+    racks.forEach(r => r.x0 -= W/2);
+    construirGalpao(W);
+    racks.forEach(construirEstante);
+
+    // animações: caixas novas caem no palete, caixas retiradas somem
+    const agora = performance.now(); let stagger = 0;
+    const atual = new Map();
+    racks.forEach(r => r.novas.forEach(({b, v, i, pid}) => {
+      const prevN = prevBoxes.has(pid) ? prevBoxes.get(pid).n : 0;
+      if(primeiro || i < prevN) return;
+      const segura = task && task.tipo === 'entrada' && task.pid === pid;
+      b.visible = false;
+      anims.push({mesh:b, tipo:'in', y1:v.y, y0:v.y + (segura ? 0.14 : 1.6), t0: segura ? Infinity : agora + Math.min(stagger++ * 14, 1500), dur: segura ? 260 : 480, hold: segura ? pid : null});
+    }));
+    slots.forEach((s, pid) => atual.set(pid, {n:s.n, pos:s.pos, mat:s.mat}));
+    if(!primeiro) prevBoxes.forEach((pv, pid) => {
+      const n = atual.has(pid) ? atual.get(pid).n : 0;
+      for(let i = n; i < pv.n; i++){
+        const g = mesh(gBox, pv.mat, pv.pos[i].x, pv.pos[i].y, pv.pos[i].z, fx);
+        const segura = task && task.tipo === 'saida' && task.pid === pid;
+        anims.push({mesh:g, fx:true, tipo: segura ? 'pick' : 'out', y0:pv.pos[i].y, t0: segura ? Infinity : agora + (i - n)*60, dur:420, hold: segura ? pid : null});
+      }
+    });
+    prevBoxes = atual;
+
+    const nCx = [...atual.values()].reduce((s, v) => s + v.n, 0);
+    $('#vpInfo').textContent = `${racks.filter(r => r.cat).length} estante(s) · ${a.length} palete(s) · ${nCx} caixa(s)`;
+
+    if(primeiro){ fk.x = park.x; fk.z = park.z; fk.h = Math.PI; setView('geral', true); }
+    else if(mudouLargura && !focusPending) setView('geral');   // galpão cresceu/encolheu: reenquadra
+    if(task && slots.has(task.pid)) iniciarTarefa(task, slots.get(task.pid));
+    else if(!fk.steps.length && (Math.abs(fk.x - park.x) > .01 || Math.abs(fk.z - park.z) > .01)) fk.steps = [{t:'move', x:park.x, z:park.z}, {t:'face', h:Math.PI}];
+    primeiro = false;
+    aplicarSelecao();
+  }
+
+  /* ---- empilhadeira: roteiro de passos ---- */
+  function liberar(pid){
+    const agora = performance.now();
+    anims = anims.filter(a => {
+      if(pid !== undefined && a.hold !== pid) return true;
+      if(a.hold == null) return true;
+      if(a.tipo === 'pick'){ fx.remove(a.mesh); return false; }
+      a.hold = null; a.t0 = agora; return true;
+    });
+  }
+  /* ---- caminhão de entregas ---- */
+  const tr = (function(){
+    const g = new THREE.Group(); g.visible = false;
+    const branco = std(0xe9edf0, {roughness:.45, metalness:.1}), escuro = std(0x1c2226, {roughness:.7, metalness:.4});
+    const vidro = std(0x1b2a36, {roughness:.08, metalness:.85}), pneu = std(0x111417, {roughness:.95}), cinza = std(0x9aa4ab, {roughness:.45, metalness:.6});
+    const faixa = std(0xf2b33d, {roughness:.5});
+    const farol = new THREE.MeshStandardMaterial({color:0xfff3c4, emissive:0xfff0b0, emissiveIntensity:1.4});
+    const lanterna = new THREE.MeshStandardMaterial({color:0xff3b3b, emissive:0xff2020, emissiveIntensity:1.2});
+    const add = (geo, mat, x, y, z, p) => mesh(geo, mat, x, y, z, p || g);
+    add(new THREE.BoxGeometry(2.0, 0.3, 6.4), escuro, 0, 0.62, -0.3);
+    const wg = new THREE.CylinderGeometry(.46, .46, .34, 20); wg.rotateZ(Math.PI/2);
+    const aro = new THREE.CylinderGeometry(.22, .22, .36, 12); aro.rotateZ(Math.PI/2);
+    [[-1.0,2.35],[1.0,2.35],[-1.0,-1.35],[1.0,-1.35],[-1.0,-2.3],[1.0,-2.3]].forEach(([x,z]) => { add(wg, pneu, x, .46, z); add(aro, cinza, x, .46, z); });
+    // cabine
+    add(new THREE.BoxGeometry(2.3, 1.9, 1.7), branco, 0, 1.75, 2.3);
+    add(new THREE.BoxGeometry(2.34, 0.62, 0.9), vidro, 0, 2.25, 2.55);
+    add(new THREE.BoxGeometry(2.0, 0.8, 0.04), vidro, 0, 2.2, 3.16);
+    add(new THREE.BoxGeometry(2.33, 0.16, 1.72), faixa, 0, 1.35, 2.3);
+    add(new THREE.BoxGeometry(1.5, 0.45, 0.04), escuro, 0, 1.12, 3.16);
+    add(new THREE.BoxGeometry(2.36, 0.26, 0.18), cinza, 0, 0.72, 3.18);
+    [-0.85, 0.85].forEach(x => add(new THREE.BoxGeometry(.34, .18, .05), farol, x, 1.15, 3.17));
+    [-1.22, 1.22].forEach(x => add(new THREE.BoxGeometry(.05, .3, .2), escuro, x, 2.3, 3.0));
+    // baú com logotipo
+    const lado = canvasTex(512, 256, (x, w, h) => {
+      x.fillStyle = '#eef2f4'; x.fillRect(0, 0, w, h);
+      x.fillStyle = '#f2b33d'; x.fillRect(0, h - 50, w, 22); x.fillStyle = '#43c391'; x.fillRect(0, h - 28, w, 28);
+      x.strokeStyle = '#0d1519'; x.lineWidth = 7; x.lineJoin = 'round';
+      x.beginPath(); x.moveTo(70, 40); x.lineTo(120, 64); x.lineTo(120, 124); x.lineTo(70, 148); x.lineTo(20, 124); x.lineTo(20, 64); x.closePath(); x.stroke();
+      x.beginPath(); x.moveTo(20, 64); x.lineTo(70, 88); x.lineTo(120, 64); x.moveTo(70, 88); x.lineTo(70, 148); x.stroke();
+      x.fillStyle = '#0d1519'; x.font = '700 62px "Segoe UI", Arial, sans-serif'; x.textBaseline = 'middle'; x.fillText('ESTOQUE', 146, 84);
+      x.fillStyle = '#4a5a63'; x.font = '600 30px "Segoe UI", Arial, sans-serif'; x.fillText('logística & distribuição', 148, 136);
+    });
+    const mLado = std(0xffffff, {map:lado, roughness:.5});
+    add(new THREE.BoxGeometry(2.4, 0.12, 4.6), escuro, 0, 0.8, -0.55);
+    [-1.18, 1.18].forEach(x => add(new THREE.BoxGeometry(0.06, 2.5, 4.6), mLado, x, 2.11, -0.55));
+    add(new THREE.BoxGeometry(2.42, 0.08, 4.6), branco, 0, 3.38, -0.55);
+    add(new THREE.BoxGeometry(2.4, 2.5, 0.06), branco, 0, 2.11, 1.72);
+    add(new THREE.BoxGeometry(2.42, 0.16, 0.1), escuro, 0, 3.3, -2.86);
+    add(new THREE.BoxGeometry(2.42, 0.1, 0.12), escuro, 0, 0.8, -2.86);
+    [-1.0, 1.0].forEach(x => add(new THREE.BoxGeometry(.2, .14, .05), lanterna, x, 0.6, -2.94));
+    // portas traseiras (abrem para os lados)
+    const pE = new THREE.Group(); pE.position.set(-1.18, 2.08, -2.9); g.add(pE);
+    const pD = new THREE.Group(); pD.position.set(1.18, 2.08, -2.9); g.add(pD);
+    add(new THREE.BoxGeometry(1.17, 2.4, 0.05), branco, 0.585, 0, 0, pE);
+    add(new THREE.BoxGeometry(1.17, 2.4, 0.05), branco, -0.585, 0, 0, pD);
+    [[pE, 1.0], [pD, -1.0]].forEach(([p, x]) => add(new THREE.BoxGeometry(.04, 1.6, .06), cinza, x, 0, -0.04, p));
+    // carga dentro do baú
+    const cargo = new THREE.Group(); cargo.position.set(0, 0.86, -1.9); g.add(cargo);
+    add(gPallet, mPallet, 0, 0.06, 0, cargo);
+    const cargoBoxes = [0,1,2,3,4,5].map(i => { const L = Math.floor(i/4), w = i % 4; return add(gBox, matBox(PAL[0]), w % 2 ? .31 : -.31, 0.32 + L*0.41, w < 2 ? .23 : -.23, cargo); });
+    cargo.visible = false;
+    scene.add(g);
+    return {g, cargo, cargoBoxes, pE, pD, x:0, z:30, h:Math.PI, steps:[], porta:0, portaAlvo:0, vel:8, velRe:2.6, giro:3};
+  })();
+  fk.vel = 3.4; fk.velRe = 1.6; fk.giro = 6;
+  /* ---- roteiros: caminhão chega na doca, empilhadeira descarrega/carrega ---- */
+  function iniciarTarefa(t, s){
+    liberar();
+    const p = porId(t.pid);
+    const m = matBox(catColor.get(p && p.categoria) || PAL[0]);
+    fk.cargoBoxes.forEach(b => b.material = m);
+    tr.cargoBoxes.forEach(b => b.material = m);
+    fk.cargo.visible = false;
+    const D = doca, f = {pronto:false, feito:false}, entrada = t.tipo === 'entrada';
+
+    tr.steps = [
+      {t:'do', fn:() => { tr.x = D.xRoad; tr.z = 26; tr.h = Math.PI; tr.porta = tr.portaAlvo = 0; tr.g.visible = true; tr.cargo.visible = entrada; }},
+      {t:'move', x:D.xRoad, z:D.z - 3.6},
+      {t:'curve', p0:[D.xRoad, D.z - 3.6], p1:[D.xRoad, D.z + 0.4], p2:[D.truckX, D.z], rev:true},
+      {t:'do', fn:() => { portaDocaAlvo = 1; tr.portaAlvo = 1; }}, {t:'wait', d:1.0},
+      {t:'do', fn:() => f.pronto = true},
+      {t:'until', fn:() => f.feito}, {t:'wait', d:.4},
+      {t:'do', fn:() => tr.portaAlvo = 0}, {t:'wait', d:.9},
+      {t:'curve', p0:[D.truckX, D.z], p1:[D.xRoad, D.z], p2:[D.xRoad, D.z - 7]},
+      {t:'do', fn:() => portaDocaAlvo = 0},
+      {t:'move', x:D.xRoad, z:-45},
+      {t:'do', fn:() => { tr.g.visible = false; tr.cargo.visible = false; }}
+    ];
+
+    const passos = [{t:'lift', y:0.06}];
+    if(entrada){
+      passos.push(
+        {t:'move', x:D.xIn, z:D.z}, {t:'face', h:Math.PI/2}, {t:'until', fn:() => f.pronto},
+        {t:'lift', y:0.86}, {t:'move', x:D.xFk, z:D.z}, {t:'lift', y:0.98},
+        {t:'do', fn:() => { tr.cargo.visible = false; fk.cargo.visible = true; }}, {t:'wait', d:.15},
+        {t:'move', x:D.xIn, z:D.z, rev:true}, {t:'do', fn:() => f.feito = true}, {t:'lift', y:0.2},
+        {t:'move', x:s.x, z:LANE}, {t:'face', h:Math.PI}, {t:'lift', y:s.base + 0.14},
+        {t:'move', x:s.x, z:APROX}, {t:'wait', d:.12},
+        {t:'do', fn:() => { fk.cargo.visible = false; liberar(t.pid); }},
+        {t:'lift', y:s.base + 0.02}, {t:'move', x:s.x, z:LANE, rev:true});
+    } else {
+      passos.push(
+        {t:'move', x:s.x, z:LANE}, {t:'face', h:Math.PI}, {t:'lift', y:s.base + 0.02},
+        {t:'move', x:s.x, z:APROX}, {t:'lift', y:s.base + 0.1},
+        {t:'do', fn:() => { liberar(t.pid); fk.cargo.visible = true; }}, {t:'wait', d:.15},
+        {t:'move', x:s.x, z:LANE, rev:true}, {t:'lift', y:0.2},
+        {t:'move', x:D.xIn, z:D.z}, {t:'face', h:Math.PI/2}, {t:'until', fn:() => f.pronto},
+        {t:'lift', y:0.98}, {t:'move', x:D.xFk, z:D.z}, {t:'lift', y:0.86},
+        {t:'do', fn:() => { fk.cargo.visible = false; tr.cargo.visible = true; }}, {t:'wait', d:.15},
+        {t:'move', x:D.xIn, z:D.z, rev:true}, {t:'do', fn:() => f.feito = true});
+    }
+    passos.push({t:'lift', y:0.06}, {t:'move', x:park.x, z:park.z}, {t:'face', h:Math.PI});
+    fk.steps = passos;
+  }
+
+  const angDiff = (a, b) => Math.atan2(Math.sin(b - a), Math.cos(b - a));
+  const girar = (a, b, max) => a + Math.max(-max, Math.min(max, angDiff(a, b)));
+  // executa o próximo passo do roteiro de um veículo (empilhadeira ou caminhão)
+  function passoVeiculo(ag, dt){
+    const s = ag.steps[0]; if(!s) return;
+    if(s.t === 'move'){
+      const dx = s.x - ag.x, dz = s.z - ag.z, d = Math.hypot(dx, dz);
+      if(d < 0.02){ ag.x = s.x; ag.z = s.z; ag.steps.shift(); return; }
+      if(!s.rev) ag.h = girar(ag.h, Math.atan2(dx, dz), ag.giro*dt);
+      const v = Math.min(d, (s.rev ? ag.velRe : ag.vel)*dt); ag.x += dx/d*v; ag.z += dz/d*v;
+    } else if(s.t === 'curve'){
+      if(s.u === undefined){ s.u = 0; s.len = Math.hypot(s.p1[0]-s.p0[0], s.p1[1]-s.p0[1]) + Math.hypot(s.p2[0]-s.p1[0], s.p2[1]-s.p1[1]); }
+      s.u = Math.min(1, s.u + (s.rev ? ag.velRe : ag.vel*0.6)*dt/Math.max(s.len, 0.1));
+      const u = s.u, a = (1-u)*(1-u), b = 2*(1-u)*u, c = u*u;
+      ag.x = a*s.p0[0] + b*s.p1[0] + c*s.p2[0];
+      ag.z = a*s.p0[1] + b*s.p1[1] + c*s.p2[1];
+      const tx = 2*(1-u)*(s.p1[0]-s.p0[0]) + 2*u*(s.p2[0]-s.p1[0]), tz = 2*(1-u)*(s.p1[1]-s.p0[1]) + 2*u*(s.p2[1]-s.p1[1]);
+      if(Math.abs(tx) + Math.abs(tz) > 1e-6) ag.h = s.rev ? Math.atan2(-tx, -tz) : Math.atan2(tx, tz);
+      if(u >= 1) ag.steps.shift();
+    } else if(s.t === 'face'){
+      ag.h = girar(ag.h, s.h, 4.5*dt); if(Math.abs(angDiff(ag.h, s.h)) < 0.01){ ag.h = s.h; ag.steps.shift(); }
+    } else if(s.t === 'lift'){
+      const d = s.y - ag.lift; if(Math.abs(d) < 0.01){ ag.lift = s.y; ag.steps.shift(); } else ag.lift += Math.sign(d)*Math.min(Math.abs(d), 1.8*dt);
+    } else if(s.t === 'wait'){
+      s.left = (s.left === undefined ? s.d : s.left) - dt; if(s.left <= 0) ag.steps.shift();
+    } else if(s.t === 'until'){
+      if(s.fn()) ag.steps.shift();
+    } else if(s.t === 'do'){ ag.steps.shift(); s.fn(); }
+  }
+  function passoEmpilhadeira(dt, now){
+    fk.beacon.material.emissiveIntensity = fk.steps.length ? (Math.sin(now/110) > 0 ? 2 : .2) : .25;
+    passoVeiculo(fk, dt);
+    fk.g.position.set(fk.x, 0, fk.z); fk.g.rotation.y = fk.h; fk.car.position.y = fk.lift;
+    passoVeiculo(tr, dt);
+    tr.g.position.set(tr.x, 0, tr.z); tr.g.rotation.y = tr.h;
+    tr.porta += Math.sign(tr.portaAlvo - tr.porta) * Math.min(Math.abs(tr.portaAlvo - tr.porta), dt*1.4);
+    tr.pE.rotation.y = tr.porta * Math.PI * 0.92; tr.pD.rotation.y = -tr.porta * Math.PI * 0.92;
+    portaDocaV += Math.sign(portaDocaAlvo - portaDocaV) * Math.min(Math.abs(portaDocaAlvo - portaDocaV), dt*0.9);
+    if(portaDoca){ const sy = 1 - 0.94*portaDocaV; portaDoca.scale.y = sy; portaDoca.position.y = 4.1 - 3.9*sy/2; }
+    if(relogio){
+      const d = new Date(), mi = d.getMinutes() + d.getSeconds()/60, ho = (d.getHours() % 12) + mi/60;
+      relogio.m.rotation.z = -mi/60*Math.PI*2; relogio.h.rotation.z = -ho/12*Math.PI*2;
+    }
+  }
+  function passoAnims(now){
+    anims = anims.filter(a => {
+      if(a.hold != null) return true;
+      const t = (now - a.t0) / a.dur;
+      if(t < 0){ if(a.tipo === 'in') a.mesh.visible = false; return true; }
+      if(a.tipo === 'in'){
+        a.mesh.visible = true;
+        if(t >= 1){ a.mesh.position.y = a.y1; return false; }
+        const e = 1 - Math.pow(1 - t, 3); a.mesh.position.y = a.y0 + (a.y1 - a.y0)*e; return true;
+      }
+      if(t >= 1){ fx.remove(a.mesh); return false; }
+      a.mesh.position.y = a.y0 + t*0.9; a.mesh.scale.setScalar(Math.max(0.001, 1 - t)); return true;
+    });
+  }
+
+  /* ---- câmera ---- */
+  function voar(pos, alvo, dur){
+    if(!dur){ cam.position.copy(pos); controls.target.copy(alvo); fly = null; controls.update(); return; }
+    fly = {t0:performance.now(), dur, p0:cam.position.clone(), p1:pos, a0:controls.target.clone(), a1:alvo};
+  }
+  function passoVoo(now){
+    if(!fly) return;
+    let t = Math.min(1, (now - fly.t0)/fly.dur); const e = t < .5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2)/2;
+    cam.position.lerpVectors(fly.p0, fly.p1, e); controls.target.lerpVectors(fly.a0, fly.a1, e);
+    if(t >= 1) fly = null;
+  }
+  function setView(v, instantaneo){
+    $$('#vpViews .hbtn').forEach(b => b.setAttribute('aria-pressed', b.dataset.view === v));
+    // enquadra as estantes + a doca e o pátio do caminhão à direita
+    const larg = layoutW + 14, cx = 3;
+    const d = Math.max(11, larg*0.62) * Math.max(1, 1.9 / (cam.aspect || 1.6));
+    let alvo = new THREE.Vector3(cx, 1.0, 1.4), pos;
+    if(v === 'frente') pos = new THREE.Vector3(cx, 2.6, d + 2);
+    else if(v === 'topo') pos = new THREE.Vector3(cx, d*1.05 + 3, 7);
+    else if(v === 'doca'){ alvo = new THREE.Vector3(doca.xR + 2, 1.2, LANE); pos = new THREE.Vector3(doca.xR - 7.5, 7.5, LANE + 6.5); }
+    else pos = new THREE.Vector3(cx - d*0.18, d*0.55, d*0.82 + 1.4);
+    voar(pos, alvo, instantaneo ? 0 : 700);
+  }
+  function focar(s){
+    const alvo = new THREE.Vector3(s.x, s.base + 0.6, 0.4);
+    const off = cam.position.clone().sub(controls.target);
+    off.setLength(Math.max(5.5, Math.min(9, off.length())));
+    if(off.y < 1.2) off.y = 1.2;
+    voar(alvo.clone().add(off), alvo, 650);
+    $$('#vpViews .hbtn').forEach(b => b.setAttribute('aria-pressed', 'false'));
+  }
+
+  /* ---- seleção e painel ---- */
+  let painelDe = null;
+  function aplicarSelecao(){
+    const p = selId ? porId(selId) : null;
+    if(!p || p.status !== 'A') selId = null;
+    const s = selId ? slots.get(selId) : null;
+    selEdges.visible = !!s;
+    if(s){
+      selEdges.position.set(s.x, s.base + (LH - 0.12)/2 + 0.01, 0);
+      if(focusPending) focar(s);
+    }
+    focusPending = false;
+    labelEls.forEach(l => l.el.classList.toggle('sel', !!l.pid && l.pid === selId));
+    painel();
+  }
+  function painel(){
+    const p = selId ? porId(selId) : null;
+    if(!p){
+      painelDe = null;
+      selp.className = 'selp hint';
+      selp.innerHTML = ativos().length
+        ? '<b>Clique em um palete</b><p>para adicionar ou retirar unidades. Vaga <span style="color:var(--ok)">+</span> cadastra um produto naquela estante.</p>'
+        : '<b>Depósito vazio</b><p>Cadastre um produto ou carregue os dados de exemplo para encher as estantes.</p><button class="btn sm" data-sp="exemplo" style="align-self:flex-start">Carregar exemplo</button>';
+      return;
+    }
+    const antigo = $('#spQ');
+    const q = painelDe === p.id && antigo ? antigo.value : '1';
+    painelDe = p.id;
+    const s = situacao(p), v = validadeInfo(p), ref = Math.max(p.minimo*3, p.qtd, 1);
+    selp.className = 'selp';
+    selp.innerHTML = `
+      <div class="top"><div><span class="code">#${p.codigo} · ${esc(p.categoria)}</span><span class="nm">${esc(p.nome)}</span></div><button class="x" data-sp="fechar" aria-label="Fechar">×</button></div>
+      <div class="qrow"><span class="big">${num.format(p.qtd)}</span><span class="b-dim">${esc(p.unidade)} · mín. ${p.minimo}</span>${s.badge}${v.badge ? ' ' + v.badge : ''}</div>
+      <div class="lvl ${s.cls}" title="Linha branca = estoque mínimo"><i style="width:${Math.min(100, p.qtd/ref*100)}%"></i>${p.minimo ? `<b style="left:${Math.min(99, p.minimo/ref*100)}%"></b>` : ''}</div>
+      <div class="stepper"><button type="button" data-sp="menos" aria-label="Diminuir quantidade">−</button><input class="field" id="spQ" inputmode="numeric" value="${esc(q)}" aria-label="Quantidade a movimentar"><button type="button" data-sp="mais" aria-label="Aumentar quantidade">+</button></div>
+      <div class="row2"><button class="btn out" data-sp="saida">Retirar</button><button class="btn ok" data-sp="entrada">Adicionar</button></div>
+      <p class="err" id="spErr"></p>
+      <button class="link" data-sp="detalhes">Ver detalhes e histórico</button>`;
+  }
+  selp.addEventListener('click', e => {
+    const b = e.target.closest('[data-sp]'); if(!b) return;
+    const a = b.dataset.sp, p = selId ? porId(selId) : null, inp = $('#spQ');
+    if(a === 'exemplo') return carregarExemplo();
+    if(a === 'fechar'){ selId = null; aplicarSelecao(); return; }
+    if(!p) return;
+    if(a === 'menos' || a === 'mais'){
+      const n = parseInt0(inp.value, 1) || 1;
+      inp.value = Math.max(1, n + (a === 'mais' ? 1 : -1)); $('#spErr').textContent = ''; return;
+    }
+    if(a === 'detalhes') return abrirDetalhe(p);
+    const erro = movimentar(p, a, parseInt0(inp.value, NaN), 'pelo depósito 3D');
+    if(erro){ const el = $('#spErr'); if(el) el.textContent = erro; }
+  });
+  selp.addEventListener('keydown', e => { if(e.target.id === 'spQ' && e.key === 'Enter'){ e.preventDefault(); } });
+
+  /* ---- rótulos HTML presos às estantes ---- */
+  const tmp = new THREE.Vector3();
+  function posicionarRotulos(){
+    const w = vp.clientWidth, h = vp.clientHeight;
+    for(const l of labelEls){
+      tmp.copy(l.v).project(cam);
+      if(tmp.z > 1 || tmp.z < -1){ l.el.style.display = 'none'; continue; }
+      l.el.style.display = '';
+      l.el.style.transform = `translate(${((tmp.x + 1)/2*w).toFixed(1)}px,${((1 - tmp.y)/2*h).toFixed(1)}px) translate(-50%,-50%)`;
+    }
+  }
+  labelsBox.addEventListener('click', e => {
+    const el = e.target.closest('.tg'); if(!el) return;
+    if(el.dataset.pid) select(el.dataset.pid, true);
+    else abrirCadastro(null, {categoria: el.dataset.cat || ''});
+  });
+
+  /* ---- mouse: passar por cima e clicar ---- */
+  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), cv = renderer.domElement;
+  function pick(ev){
+    const r = cv.getBoundingClientRect();
+    ndc.set((ev.clientX - r.left)/r.width*2 - 1, -(ev.clientY - r.top)/r.height*2 + 1);
+    ray.setFromCamera(ndc, cam);
+    const hit = ray.intersectObjects(pickables, false)[0];
+    return hit ? hit.object.userData : null;
+  }
+  let down = null;
+  cv.addEventListener('pointerdown', e => { down = {x:e.clientX, y:e.clientY}; fly = null; });
+  cv.addEventListener('pointerup', e => {
+    if(!down) return; const moveu = Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6; down = null;
+    if(moveu || e.button !== 0) return;
+    const info = pick(e);
+    if(info && info.pid) select(info.pid, info.pid !== selId);
+    else if(info && info.ghost) abrirCadastro(null, {categoria: info.cat || ''});
+    else { selId = null; aplicarSelecao(); }
+  });
+  cv.addEventListener('pointermove', e => {
+    if(e.buttons){ tip.hidden = true; hovEdges.visible = false; return; }
+    const info = pick(e), r = vp.getBoundingClientRect();
+    let html = '';
+    hovEdges.visible = false;
+    if(info && info.pid){
+      const p = porId(info.pid), s = slots.get(info.pid);
+      if(p && s){
+        hovEdges.position.set(s.x, s.base + (LH - 0.12)/2 + 0.01, 0); hovEdges.visible = info.pid !== selId;
+        html = `<b>${esc(p.nome)}</b><span>#${p.codigo} · ${num.format(p.qtd)} ${esc(p.unidade)} · mín. ${p.minimo}</span>`;
+      }
+    } else if(info && info.ghost){
+      html = `<b>Vaga livre</b><span>clique para cadastrar${info.cat ? ' em ' + esc(info.cat) : ''}</span>`;
+    }
+    cv.style.cursor = html ? 'pointer' : '';
+    tip.hidden = !html;
+    if(html){
+      tip.innerHTML = html;
+      const x = e.clientX - r.left + 14, y = e.clientY - r.top + 14;
+      tip.style.left = Math.min(x, r.width - tip.offsetWidth - 8) + 'px';
+      tip.style.top = Math.min(y, r.height - tip.offsetHeight - 8) + 'px';
+    }
+  });
+  cv.addEventListener('pointerleave', () => { tip.hidden = true; hovEdges.visible = false; });
+
+  $$('#vpViews .hbtn').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
+  $('#vpNew').addEventListener('click', () => {
+    const p = selId ? porId(selId) : null;
+    abrirCadastro(null, p ? {categoria:p.categoria} : null);
+  });
+
+  /* ---- tamanho e laço de animação ---- */
+  function resize(){
+    const w = vp.clientWidth, h = vp.clientHeight; if(!w || !h) return;
+    renderer.setSize(w, h, false); cam.aspect = w/h; cam.updateProjectionMatrix();
+  }
+  new ResizeObserver(resize).observe(vp); resize();
+  let ultimo = performance.now();
+  function loop(now){
+    requestAnimationFrame(loop);
+    const dt = Math.min(0.05, (now - ultimo)/1000); ultimo = now;
+    passoEmpilhadeira(dt, now); passoAnims(now); passoVoo(now);
+    if(selEdges.visible) selEdges.material.opacity = 0.55 + 0.45*Math.sin(now/180);
+    controls.update();
+    renderer.render(scene, cam);
+    posicionarRotulos();
+  }
+  requestAnimationFrame(loop);
+
+  function select(id, focus){
+    selId = id || null; focusPending = !!focus;
+    if(!selId || slots.has(selId) || !focus) aplicarSelecao();
+  }
+  return {
+    update,
+    select,
+    anim(pid, tipo){ pendingTask = {pid, tipo}; }
+  };
+})();
+
+/* ================= Eventos gerais ================= */
+$('#newBtn').addEventListener('click', ()=>abrirCadastro(null));
+$('#emptyProd').addEventListener('click', e=>{
+  const b = e.target.closest('[data-empty]'); if(!b) return;
+  if(b.dataset.empty==='novo') abrirCadastro(null);
+  else if(b.dataset.empty==='exemplo') carregarExemplo();
+  else { $('#q').value=''; $('#fCat').value=''; $('#fSit').value=''; renderProdutos(); }
+});
+['#q','#fCat','#fSit'].forEach(s=>$(s).addEventListener('input', renderProdutos));
+['#qMov','#fTipo'].forEach(s=>$(s).addEventListener('input', renderMovs));
+$$('th[data-sort]').forEach(th=>th.addEventListener('click', ()=>{
+  if(sortKey===th.dataset.sort) sortDir = -sortDir; else { sortKey = th.dataset.sort; sortDir = 1; }
+  renderProdutos();
+}));
+$$('.tabs button').forEach(b=>b.addEventListener('click', ()=>{
+  $$('.tabs button').forEach(x=>x.setAttribute('aria-selected', x===b));
+  $$('[data-panel]').forEach(p=>p.hidden = p.dataset.panel !== b.dataset.tab);
+}));
+$$('[data-close]').forEach(b=>b.addEventListener('click', ()=>b.closest('dialog').close()));
+$$('dialog').forEach(d=>d.addEventListener('click', e=>{ if(e.target===d) d.close(); }));
+window.addEventListener('storage', e=>{ if(e.key===KEY){ db = load(); render(); } });
+function relogioTopo(){
+  const d = new Date();
+  $('#hClock').textContent = d.toLocaleDateString('pt-BR', {weekday:'short', day:'2-digit', month:'short'}).replace(/\./g,'') + ' · ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+}
+relogioTopo(); setInterval(relogioTopo, 15000);
+try{ localStorage.setItem(KEY + '.teste', '1'); localStorage.removeItem(KEY + '.teste'); statusSalvo(true); }catch(e){ statusSalvo(false); }
+
+render();
+})();
+</script>
+</body>
+</html>

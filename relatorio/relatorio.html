@@ -1,0 +1,911 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Controle de Estoque de Produtos – Relatório do Trabalho</title>
+<style>
+@page{size:A4;margin:2.5cm 2cm 2.2cm 3cm;
+  @bottom-right{content:counter(page);font-family:"Times New Roman",Times,serif;font-size:10pt;color:#555}}
+@page capa{margin:2.5cm 2cm 2.5cm 3cm;@bottom-right{content:none}}
+*{box-sizing:border-box}
+html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{font-family:"Times New Roman",Times,serif;font-size:12pt;line-height:1.5;color:#111;margin:0}
+.capa{page:capa;height:24.2cm;display:flex;flex-direction:column;justify-content:space-between;text-align:center;page-break-after:always}
+.capa .inst{font-weight:bold;text-transform:uppercase;line-height:1.4}
+.capa .autores{text-transform:uppercase;line-height:1.6}
+.capa .titulo{font-size:16pt;font-weight:bold;text-transform:uppercase;line-height:1.4}
+.capa .sub{font-size:13pt;margin-top:8pt}
+.capa .rodape{line-height:1.5}
+.folharosto{page:capa;height:24.2cm;display:flex;flex-direction:column;justify-content:space-between;text-align:center;page-break-after:always}
+.folharosto .nota{margin-left:8cm;text-align:justify;font-size:11pt;line-height:1.3}
+h1{font-size:13pt;text-transform:uppercase;margin:0 0 12pt;page-break-after:avoid;break-after:avoid}
+h1.nova{page-break-before:always;break-before:page}
+h2{font-size:12pt;margin:16pt 0 6pt;page-break-after:avoid;break-after:avoid}
+h3{font-size:12pt;font-weight:normal;font-style:italic;margin:12pt 0 4pt;page-break-after:avoid;break-after:avoid}
+p{margin:0 0 8pt;text-align:justify;text-indent:1.25cm}
+p.ni,li p{text-indent:0}
+ul,ol{margin:0 0 8pt;padding-left:1.3cm;text-align:justify}
+li{margin-bottom:3pt}
+code{font-family:Consolas,"Courier New",monospace;font-size:10pt;background:#f1f3f5;padding:0 3px;border-radius:2px}
+pre{font-family:Consolas,"Courier New",monospace;font-size:8.6pt;line-height:1.3;background:#f6f8fa;border:1px solid #d9dee3;border-left:3px solid #c9902a;padding:7pt 9pt;margin:4pt 0 10pt;white-space:pre-wrap;word-break:break-word;page-break-inside:avoid;break-inside:avoid}
+pre.longo{page-break-inside:auto;break-inside:auto}
+pre.terminal{background:#0f171b;color:#d8e2e6;border-color:#0f171b;border-left-color:#43c391}
+.k{color:#8a3ffc}.t{color:#0b6e99}.c{color:#6a737d;font-style:italic}.s{color:#1a7f37}
+figure{margin:8pt 0 12pt;text-align:center;page-break-inside:avoid;break-inside:avoid}
+figure img{max-width:100%;border:1px solid #c8cdd2}
+figcaption{font-size:10pt;margin-top:4pt;line-height:1.3}
+figcaption b{font-weight:bold}
+.fonte{font-size:9.5pt;display:block}
+table{border-collapse:collapse;width:100%;font-size:10.5pt;margin:4pt 0 12pt;line-height:1.3;page-break-inside:avoid;break-inside:avoid}
+th,td{border:1px solid #9aa3ab;padding:4pt 6pt;vertical-align:top;text-align:left}
+th{background:#eceff2}
+caption{caption-side:top;font-size:10pt;margin-bottom:4pt;text-align:center}
+.sumario{list-style:none;padding:0;margin:0}
+.sumario li{display:flex;gap:8pt;margin:3pt 0}
+.sumario li span.n{min-width:1.3cm;font-weight:bold}
+.sumario li.sub{padding-left:1.3cm}
+.sumario li.sub span.n{font-weight:normal;min-width:1.1cm}
+.caixa{border:1px solid #c9902a;background:#fdf7ea;padding:7pt 10pt;margin:6pt 0 10pt;font-size:11pt;line-height:1.4;page-break-inside:avoid;break-inside:avoid}
+.caixa p{text-indent:0;margin:0 0 4pt}
+.caixa p:last-child{margin:0}
+.apendice pre{font-size:7.8pt}
+</style>
+</head>
+<body>
+
+<!-- ================= CAPA ================= -->
+<section class="capa">
+  <div class="inst">Universidade José do Rosário Vellano – UNIFENAS</div>
+  <div class="autores">
+    Lais Aparecida<br>
+    André Luiz Ribeiro Resende<br>
+    Victor Hugo de Sousa Ananias<br>
+    João Gabriel da Silva Seixas
+  </div>
+  <div>
+    <div class="titulo">Controle de Estoque de Produtos</div>
+    <div class="sub">Sistema em linguagem C com arquivo binário e interface visual com depósito 3D</div>
+  </div>
+  <div class="rodape">2026</div>
+</section>
+
+<!-- ================= FOLHA DE ROSTO ================= -->
+<section class="folharosto">
+  <div class="autores" style="text-transform:uppercase;line-height:1.6">
+    Lais Aparecida<br>
+    André Luiz Ribeiro Resende<br>
+    Victor Hugo de Sousa Ananias<br>
+    João Gabriel da Silva Seixas
+  </div>
+  <div>
+    <div class="titulo" style="font-size:16pt;font-weight:bold;text-transform:uppercase">Controle de Estoque de Produtos</div>
+  </div>
+  <div class="nota">
+    Trabalho apresentado à Universidade José do Rosário Vellano – UNIFENAS, como requisito de avaliação,
+    sob orientação da Professora Flávia. O trabalho consiste no desenvolvimento de um software de controle de
+    estoque de produtos em linguagem C, com cadastro, consulta por código, exportação para arquivo texto,
+    exclusão lógica e contagem de registros.
+  </div>
+  <div class="rodape">2026</div>
+</section>
+
+<!-- ================= SUMÁRIO ================= -->
+<section style="page-break-after:always">
+  <h1 style="text-align:center">Sumário</h1>
+  <ul class="sumario">
+    <li><span class="n">1</span>Introdução</li>
+    <li><span class="n">2</span>Objetivos</li>
+    <li><span class="n">3</span>Requisitos do trabalho</li>
+    <li><span class="n">4</span>Visão geral da solução</li>
+    <li><span class="n">5</span>Programa em linguagem C</li>
+    <li class="sub"><span class="n">5.1</span>Estrutura do registro (struct Produto)</li>
+    <li class="sub"><span class="n">5.2</span>Arquivo binário e acesso aos dados</li>
+    <li class="sub"><span class="n">5.3</span>Leitura segura dos dados digitados</li>
+    <li class="sub"><span class="n">5.4</span>Cadastrar registros</li>
+    <li class="sub"><span class="n">5.5</span>Consultar por código</li>
+    <li class="sub"><span class="n">5.6</span>Exportar para arquivo texto (TXT)</li>
+    <li class="sub"><span class="n">5.7</span>Excluir registros (exclusão lógica)</li>
+    <li class="sub"><span class="n">5.8</span>Contabilizar registros</li>
+    <li class="sub"><span class="n">5.9</span>Menu principal</li>
+    <li class="sub"><span class="n">5.10</span>Exemplo de execução</li>
+    <li><span class="n">6</span>Aplicação com interface visual</li>
+    <li class="sub"><span class="n">6.1</span>Tela principal e indicadores</li>
+    <li class="sub"><span class="n">6.2</span>Tabela de produtos, pesquisa e filtros</li>
+    <li class="sub"><span class="n">6.3</span>Entrada e saída de estoque</li>
+    <li class="sub"><span class="n">6.4</span>Exclusão lógica, alertas e histórico</li>
+    <li class="sub"><span class="n">6.5</span>Exportação TXT e backup</li>
+    <li><span class="n">7</span>Depósito 3D</li>
+    <li class="sub"><span class="n">7.1</span>Como o galpão é montado</li>
+    <li class="sub"><span class="n">7.2</span>Interação com os paletes</li>
+    <li class="sub"><span class="n">7.3</span>Empilhadeira e caminhão de entregas</li>
+    <li class="sub"><span class="n">7.4</span>Cenário</li>
+    <li><span class="n">8</span>Como executar</li>
+    <li><span class="n">9</span>Testes realizados</li>
+    <li><span class="n">10</span>Conclusão</li>
+    <li><span class="n"></span>Referências</li>
+    <li><span class="n"></span>Apêndice A – Código-fonte completo em C</li>
+  </ul>
+</section>
+
+<!-- ================= 1 INTRODUÇÃO ================= -->
+<h1>1 Introdução</h1>
+<p>O controle de estoque é uma das atividades mais importantes de qualquer empresa que trabalha com produtos físicos,
+seja um supermercado, uma farmácia ou um centro de distribuição. Saber quais produtos existem, em que quantidade, qual o
+valor parado no depósito e quando é preciso comprar novamente evita prejuízos com falta de mercadoria, excesso de
+compras e produtos vencidos.</p>
+<p>Este trabalho apresenta o desenvolvimento de um <b>software de Controle de Estoque de Produtos</b>. A parte principal,
+exigida no enunciado, foi desenvolvida em <b>linguagem C</b> e grava os registros em um <b>arquivo binário</b>,
+implementando as cinco funcionalidades obrigatórias: cadastrar registros, consultar por código, exportar para arquivo
+texto, excluir registros por exclusão lógica e contabilizar os registros ativos no menu.</p>
+<p>Além do programa em C, o grupo desenvolveu uma <b>aplicação com interface visual</b> que segue as mesmas regras do
+programa em C (código único, exclusão lógica por status, exportação em TXT e contagem de ativos) e acrescenta recursos de um
+estoque real: entrada e saída de mercadorias, estoque mínimo, fornecedor, validade, histórico de movimentações, alertas
+e um <b>depósito em 3D</b>, no qual os produtos aparecem como caixas em paletes nas estantes de um galpão, com empilhadeira
+e caminhão de entregas animados. O objetivo dessa segunda parte é facilitar a interpretação do estoque e tornar a
+apresentação do trabalho mais clara.</p>
+
+<!-- ================= 2 OBJETIVOS ================= -->
+<h2>2 Objetivos</h2>
+<p class="ni"><b>Objetivo geral:</b> desenvolver um sistema de controle de estoque de produtos em linguagem C que armazene os
+dados em arquivo binário e ofereça as operações básicas de manutenção dos registros.</p>
+<p class="ni"><b>Objetivos específicos:</b></p>
+<ul>
+  <li>Modelar o produto como um registro (<code>struct</code>) com seus dados fundamentais e um campo de status;</li>
+  <li>Gravar e ler os registros em um arquivo binário usando as funções da biblioteca padrão (<code>fopen</code>,
+      <code>fread</code>, <code>fwrite</code>, <code>fseek</code>);</li>
+  <li>Implementar a exclusão lógica, marcando o registro como excluído sem apagá-lo do arquivo;</li>
+  <li>Gerar um relatório legível em arquivo texto;</li>
+  <li>Mostrar no menu a quantidade de registros ativos;</li>
+  <li>Validar tudo o que o usuário digita, para o programa não travar nem gravar dados inválidos;</li>
+  <li>Construir uma interface visual com depósito 3D que represente o estoque de forma intuitiva.</li>
+</ul>
+
+<!-- ================= 3 REQUISITOS ================= -->
+<h1 class="nova">3 Requisitos do trabalho</h1>
+<p>O enunciado exige que o sistema implemente obrigatoriamente as funcionalidades abaixo. A tabela mostra onde cada uma
+foi atendida no programa em C e na aplicação visual.</p>
+<table>
+  <caption><b>Tabela 1</b> – Requisitos obrigatórios e como foram atendidos</caption>
+  <tr><th style="width:22%">Requisito</th><th style="width:43%">Programa em C (<code>estoque.c</code>)</th><th>Aplicação visual (<code>estoque.html</code>)</th></tr>
+  <tr><td>Cadastrar registros</td><td>Função <code>cadastrarProduto()</code>: lê código, nome, categoria, quantidade e preço, impede código repetido e grava no fim de <code>produtos.dat</code>.</td><td>Botão “+ Novo produto” ou vaga “+” no depósito 3D; campos extras de fornecedor, unidade, estoque mínimo e validade.</td></tr>
+  <tr><td>Consultar por código</td><td>Função <code>consultarProduto()</code>, que usa <code>buscarPorCodigo()</code> para percorrer o arquivo e exibe todos os dados e o valor total.</td><td>Campo “Código” + “Consultar” no topo; abre a ficha do produto com histórico e destaca o palete no 3D.</td></tr>
+  <tr><td>Exportar para TXT</td><td>Função <code>exportarTxt()</code>: cria <code>produtos.txt</code> com tabela formatada, total de produtos e valor do estoque.</td><td>Botão “Exportar relatório TXT”: baixa <code>estoque.txt</code> com todos os campos e marcações de estoque baixo e vencimento.</td></tr>
+  <tr><td>Excluir (exclusão lógica)</td><td>Função <code>excluirProduto()</code>: troca o campo <code>status</code> de <code>'A'</code> para <code>'E'</code> e regrava o registro no mesmo lugar com <code>fseek</code>.</td><td>Botão de lixeira: o produto recebe status “E” e vai para a aba “Excluídos”, de onde pode ser restaurado.</td></tr>
+  <tr><td>Contabilizar registros</td><td>Função <code>contarAtivos()</code>, chamada a cada exibição do menu, que mostra também o total gravado no arquivo.</td><td>Indicador “Produtos ativos” no topo, com o número de excluídos e o total.</td></tr>
+</table>
+
+<!-- ================= 4 VISÃO GERAL ================= -->
+<h2>4 Visão geral da solução</h2>
+<p>A solução é formada por dois programas que ficam na mesma pasta, <code>ControleEstoque</code>:</p>
+<table>
+  <caption><b>Tabela 2</b> – Arquivos do projeto</caption>
+  <tr><th style="width:28%">Arquivo</th><th>Função</th></tr>
+  <tr><td><code>estoque.c</code></td><td>Código-fonte do programa em linguagem C (entrega principal). Compilado gera <code>estoque.exe</code>.</td></tr>
+  <tr><td><code>produtos.dat</code></td><td>Arquivo binário criado pelo programa em C. Guarda os registros um após o outro, cada um com o tamanho exato da <code>struct Produto</code>.</td></tr>
+  <tr><td><code>produtos.txt</code></td><td>Relatório em texto gerado pela opção “Exportar”.</td></tr>
+  <tr><td><code>estoque.html</code></td><td>Aplicação com interface visual e depósito 3D. Abre com dois cliques em qualquer navegador moderno (Edge, Chrome).</td></tr>
+</table>
+<p>As duas versões seguem as mesmas regras de negócio: o código identifica o produto, não existem dois produtos ativos com
+o mesmo código, a exclusão é sempre lógica (por status) e a contagem considera apenas os registros ativos.</p>
+
+<!-- ================= 5 PROGRAMA EM C ================= -->
+<h1 class="nova">5 Programa em linguagem C</h1>
+<p>O programa foi escrito em C padrão (C99), usando apenas as bibliotecas <code>stdio.h</code>, <code>stdlib.h</code> e
+<code>string.h</code>. Por isso compila no Dev-C++, no Code::Blocks ou em qualquer compilador GCC, sem dependências
+externas. Nos testes ele compilou sem nenhum aviso com as opções <code>-Wall -Wextra -std=c99 -pedantic</code>.</p>
+
+<h2>5.1 Estrutura do registro (struct Produto)</h2>
+<p>Cada produto é representado por uma estrutura com seus dados fundamentais. O campo <code>status</code> é o que permite a
+exclusão lógica: <code>'A'</code> indica registro ativo e <code>'E'</code> indica registro excluído.</p>
+<pre><span class="k">#define</span> ARQ_DADOS   <span class="s">"produtos.dat"</span>
+<span class="k">#define</span> ARQ_TEXTO   <span class="s">"produtos.txt"</span>
+<span class="k">#define</span> STATUS_ATIVO     <span class="s">'A'</span>
+<span class="k">#define</span> STATUS_EXCLUIDO  <span class="s">'E'</span>
+
+<span class="k">typedef struct</span> {
+    <span class="t">int</span>   codigo;          <span class="c">/* identificador do produto            */</span>
+    <span class="t">char</span>  nome[50];        <span class="c">/* descrição do produto                */</span>
+    <span class="t">char</span>  categoria[30];   <span class="c">/* ex.: Alimentos, Limpeza             */</span>
+    <span class="t">int</span>   quantidade;      <span class="c">/* unidades em estoque                 */</span>
+    <span class="t">float</span> preco;           <span class="c">/* preço unitário                      */</span>
+    <span class="t">char</span>  status;          <span class="c">/* 'A' = ativo, 'E' = excluído         */</span>
+} Produto;</pre>
+<p>Como todos os campos têm tamanho fixo (inclusive os textos, que são vetores de <code>char</code>), todos os registros
+ocupam exatamente <code>sizeof(Produto)</code> bytes no arquivo. Isso permite calcular a posição de qualquer registro
+multiplicando o seu índice pelo tamanho da estrutura, o que é usado na exclusão lógica.</p>
+
+<h2>5.2 Arquivo binário e acesso aos dados</h2>
+<p>Os registros ficam no arquivo <code>produtos.dat</code>, gravados em sequência. A função <code>abrirArquivo()</code> abre o
+arquivo no modo <code>"rb+"</code> (leitura e escrita binária). Se o arquivo ainda não existir, ela o cria com
+<code>"wb+"</code>:</p>
+<pre><span class="t">FILE</span> *abrirArquivo(<span class="t">void</span>) {
+    <span class="t">FILE</span> *fp = fopen(ARQ_DADOS, <span class="s">"rb+"</span>);
+    <span class="k">if</span> (fp == NULL) fp = fopen(ARQ_DADOS, <span class="s">"wb+"</span>);   <span class="c">/* primeira execução */</span>
+    <span class="k">if</span> (fp == NULL) printf(<span class="s">"Erro: nao foi possivel abrir o arquivo %s.\n"</span>, ARQ_DADOS);
+    <span class="k">return</span> fp;
+}</pre>
+<p>A busca de um produto é feita pela função <code>buscarPorCodigo()</code>. Ela volta ao início do arquivo
+(<code>rewind</code>) e lê um registro por vez com <code>fread</code>. Ao encontrar um registro <b>ativo</b> com o código
+procurado, devolve a <b>posição</b> dele (0 para o primeiro, 1 para o segundo e assim por diante) e copia os dados para a
+variável recebida. Se não encontrar, devolve <code>-1</code>. Os registros excluídos são ignorados, por isso um produto
+excluído não aparece em consultas.</p>
+<pre><span class="t">long</span> buscarPorCodigo(<span class="t">FILE</span> *fp, <span class="t">int</span> codigo, Produto *saida) {
+    Produto p;
+    <span class="t">long</span> pos = 0;
+    rewind(fp);
+    <span class="k">while</span> (fread(&amp;p, <span class="k">sizeof</span>(Produto), 1, fp) == 1) {
+        <span class="k">if</span> (p.status == STATUS_ATIVO &amp;&amp; p.codigo == codigo) {
+            <span class="k">if</span> (saida != NULL) *saida = p;
+            <span class="k">return</span> pos;
+        }
+        pos++;
+    }
+    <span class="k">return</span> -1;
+}</pre>
+
+<h2>5.3 Leitura segura dos dados digitados</h2>
+<p>Um problema comum em programas de console é usar <code>scanf</code> diretamente: se o usuário digita uma letra onde se
+espera um número, o programa entra em laço infinito ou grava lixo. Para evitar isso, toda a entrada passa por três funções
+auxiliares:</p>
+<ul>
+  <li><code>lerTexto()</code> lê uma linha inteira com <code>fgets</code>, remove o “Enter” do final, descarta o excesso se a
+      linha for maior que o campo e não aceita texto vazio. Se a entrada terminar (Ctrl+Z), encerra o programa com
+      segurança;</li>
+  <li><code>lerInteiro()</code> usa <code>lerTexto()</code> e converte com <code>strtol</code>, conferindo se a linha inteira é
+      um número e se ele é maior ou igual ao mínimo permitido (por exemplo, código ≥ 1 e quantidade ≥ 0);</li>
+  <li><code>lerReal()</code> faz o mesmo para o preço com <code>strtod</code> e aceita vírgula ou ponto como separador decimal
+      (o usuário pode digitar 27,90 ou 27.90).</li>
+</ul>
+<pre><span class="t">int</span> lerInteiro(<span class="t">const char</span> *rotulo, <span class="t">int</span> minimo) {
+    <span class="t">char</span> buf[64];  <span class="t">char</span> *fim;  <span class="t">long</span> valor;
+    <span class="k">for</span> (;;) {
+        lerTexto(rotulo, buf, <span class="k">sizeof</span> buf);
+        valor = strtol(buf, &amp;fim, 10);
+        <span class="k">if</span> (*fim == <span class="s">'\0'</span> &amp;&amp; valor &gt;= minimo) <span class="k">return</span> (<span class="t">int</span>)valor;
+        printf(<span class="s">"  Valor invalido. Informe um numero inteiro &gt;= %d.\n"</span>, minimo);
+    }
+}</pre>
+
+<h2>5.4 Cadastrar registros</h2>
+<p>A função <code>cadastrarProduto()</code> abre o arquivo, pede o código e, antes de continuar, usa
+<code>buscarPorCodigo()</code> para garantir que não exista outro produto <b>ativo</b> com o mesmo código. Depois lê nome,
+categoria, quantidade e preço, define o status como ativo e grava o registro no <b>final</b> do arquivo:</p>
+<pre>    p.status = STATUS_ATIVO;
+    fseek(fp, 0, SEEK_END);                                  <span class="c">/* vai para o fim do arquivo */</span>
+    <span class="k">if</span> (fwrite(&amp;p, <span class="k">sizeof</span>(Produto), 1, fp) == 1)
+        printf(<span class="s">"Produto cadastrado com sucesso!\n"</span>);</pre>
+<p>A estrutura é zerada com <code>memset</code> antes do preenchimento, para que o arquivo não contenha restos de memória nas
+partes não usadas dos textos.</p>
+
+<h2>5.5 Consultar por código</h2>
+<p>A função <code>consultarProduto()</code> abre o arquivo apenas para leitura (<code>"rb"</code>), pede o código e chama
+<code>buscarPorCodigo()</code>. Se o produto existir e estiver ativo, a função <code>exibirProduto()</code> mostra código, nome,
+categoria, quantidade, preço unitário e o <b>valor total</b> (quantidade × preço). Caso contrário, informa que o produto
+não foi encontrado.</p>
+
+<h2>5.6 Exportar para arquivo texto (TXT)</h2>
+<p>A função <code>exportarTxt()</code> lê todos os registros do arquivo binário e escreve no arquivo <code>produtos.txt</code>
+somente os ativos, em forma de tabela com colunas alinhadas. As larguras fixas do <code>fprintf</code>
+(<code>%-8d</code>, <code>%-30.30s</code>, <code>%12.2f</code>) alinham as colunas e cortam textos muito longos, deixando o
+relatório legível em qualquer editor (Bloco de Notas, por exemplo). No final são escritos o total de produtos ativos e o
+valor total do estoque.</p>
+<pre><span class="k">while</span> (fread(&amp;p, <span class="k">sizeof</span>(Produto), 1, fp) == 1) {
+    <span class="k">if</span> (p.status != STATUS_ATIVO) <span class="k">continue</span>;           <span class="c">/* ignora excluídos */</span>
+    fprintf(txt, <span class="s">"%-8d %-30.30s %-20.20s %8d %12.2f\n"</span>,
+            p.codigo, p.nome, p.categoria, p.quantidade, p.preco);
+    valorEstoque += p.quantidade * p.preco;
+    qtd++;
+}</pre>
+
+<h2>5.7 Excluir registros (exclusão lógica)</h2>
+<p>Este é o ponto central do enunciado. Na <b>exclusão física</b> o registro seria apagado e o arquivo teria de ser
+reescrito sem ele. Na <b>exclusão lógica</b>, usada aqui, o registro continua no arquivo e apenas o campo
+<code>status</code> é alterado para <code>'E'</code>. Assim:</p>
+<ul>
+  <li>o arquivo binário mantém a mesma estrutura e o mesmo tamanho, sem risco de corromper os outros registros;</li>
+  <li>a operação é rápida, porque só um registro é regravado;</li>
+  <li>os dados excluídos continuam disponíveis para auditoria ou para uma futura restauração.</li>
+</ul>
+<p>A função <code>excluirProduto()</code> localiza o produto, mostra os dados e pede confirmação (S/N). Confirmada a exclusão,
+ela usa a posição devolvida por <code>buscarPorCodigo()</code> para levar o ponteiro do arquivo exatamente até o início
+daquele registro com <code>fseek</code> e regrava somente ele:</p>
+<pre>    p.status = STATUS_EXCLUIDO;
+    fseek(fp, pos * (<span class="t">long</span>)<span class="k">sizeof</span>(Produto), SEEK_SET);   <span class="c">/* início do registro */</span>
+    <span class="k">if</span> (fwrite(&amp;p, <span class="k">sizeof</span>(Produto), 1, fp) == 1)
+        printf(<span class="s">"Produto excluido com sucesso.\n"</span>);</pre>
+<div class="caixa">
+  <p><b>Exemplo:</b> se o produto excluído é o terceiro do arquivo (posição 2) e cada registro ocupa 96 bytes, o
+  <code>fseek</code> posiciona o ponteiro no byte 2 × 96 = 192. O <code>fwrite</code> sobrescreve apenas esses 96 bytes,
+  agora com <code>status = 'E'</code>. Os demais registros não são tocados.</p>
+</div>
+<p>Depois da exclusão, o produto deixa de aparecer na consulta, no relatório TXT e na contagem de ativos, mas continua
+contado no total gravado no arquivo, como mostra a seção seguinte.</p>
+
+<h2>5.8 Contabilizar registros</h2>
+<p>Duas funções fazem a contagem que aparece no cabeçalho do menu:</p>
+<ul>
+  <li><code>contarAtivos()</code> percorre o arquivo e conta os registros com <code>status == 'A'</code>, que é a quantidade de
+      produtos realmente em uso;</li>
+  <li><code>contarTotalGravados()</code> calcula quantos registros existem fisicamente no arquivo, ativos e excluídos, dividindo
+      o tamanho do arquivo pelo tamanho de um registro: posiciona no fim com <code>fseek(fp, 0, SEEK_END)</code>, obtém o
+      tamanho em bytes com <code>ftell</code> e divide por <code>sizeof(Produto)</code>.</li>
+</ul>
+<p>Mostrar os dois números deixa visível o funcionamento da exclusão lógica: ao excluir um produto, o número de ativos
+diminui, mas o total gravado continua o mesmo.</p>
+
+<h2>5.9 Menu principal</h2>
+<p>A função <code>main()</code> repete o menu com um laço <code>do…while</code> até o usuário escolher 0. A cada volta, o
+cabeçalho é redesenhado com a contagem atualizada, e a opção escolhida é tratada por um <code>switch</code>, que chama a função
+correspondente. Depois de cada operação, <code>pausar()</code> espera o Enter para o usuário conseguir ler o resultado.</p>
+<pre>==========================================
+      CONTROLE DE ESTOQUE DE PRODUTOS
+==========================================
+ Produtos ativos: 2  (gravados no arquivo: 2)
+------------------------------------------
+ 1 - Cadastrar produto
+ 2 - Consultar produto por codigo
+ 3 - Exportar produtos para TXT
+ 4 - Excluir produto
+ 0 - Sair
+==========================================
+Opcao:</pre>
+
+<h2>5.10 Exemplo de execução</h2>
+<p>O trecho abaixo foi obtido executando o programa compilado: cadastro de dois produtos, consulta do código 101 e
+exclusão lógica do código 201. Os valores digitados pelo usuário não aparecem porque a entrada foi fornecida por arquivo
+durante o teste.</p>
+<pre class="terminal">=== CONSULTAR PRODUTO POR CODIGO ===
+Codigo: ----------------------------------------
+Codigo     : 101
+Nome       : Arroz tipo 1 5kg
+Categoria  : Alimentos
+Quantidade : 48
+Preco unit.: R$ 27.90
+Valor total: R$ 1339.20
+----------------------------------------
+
+=== EXCLUIR PRODUTO ===
+Codigo do produto a excluir: ----------------------------------------
+Codigo     : 201
+Nome       : Detergente neutro 500mL
+Categoria  : Limpeza
+Quantidade : 120
+Preco unit.: R$ 2.49
+Valor total: R$ 298.80
+----------------------------------------
+Confirma a exclusao? (S/N): Produto excluido com sucesso.
+
+ Produtos ativos: 1  (gravados no arquivo: 2)</pre>
+<p>Em seguida, a opção 3 gerou o arquivo <code>produtos.txt</code>. O produto excluído não aparece no relatório:</p>
+<pre class="terminal">RELATORIO DE ESTOQUE DE PRODUTOS
+==================================================================================
+CODIGO   NOME                           CATEGORIA                 QTD   PRECO (R$)
+----------------------------------------------------------------------------------
+101      Arroz tipo 1 5kg               Alimentos                  48        27.90
+----------------------------------------------------------------------------------
+Total de produtos ativos: 1
+Valor total em estoque : R$ 1339.20</pre>
+
+<!-- ================= 6 APLICAÇÃO VISUAL ================= -->
+<h1 class="nova">6 Aplicação com interface visual</h1>
+<p>Para tornar o sistema mais próximo de um estoque real e mais fácil de interpretar, o grupo desenvolveu uma segunda
+versão com interface gráfica, no arquivo <code>estoque.html</code>. Ela é feita com HTML, CSS e JavaScript, roda direto no
+navegador e não precisa de instalação nem de servidor. Os dados ficam salvos no próprio navegador (<i>localStorage</i>), ou
+seja, continuam lá ao fechar e abrir de novo o arquivo no mesmo computador.</p>
+<p>Essa versão mantém as mesmas regras do programa em C e acrescenta:</p>
+<ul>
+  <li>campos de <b>fornecedor</b>, <b>unidade</b> (un, kg, L, cx…), <b>estoque mínimo</b> e <b>data de validade</b>;</li>
+  <li><b>entrada e saída</b> de mercadorias com registro de cada movimentação;</li>
+  <li><b>alertas</b> automáticos de estoque baixo, produto zerado, vencido ou vencendo em até 30 dias;</li>
+  <li><b>pesquisa, filtros e ordenação</b> da lista de produtos;</li>
+  <li>aba de <b>excluídos</b> com opção de restaurar;</li>
+  <li><b>backup e restauração</b> dos dados em arquivo;</li>
+  <li>o <b>depósito 3D</b>, descrito na seção 7.</li>
+</ul>
+
+<h2>6.1 Tela principal e indicadores</h2>
+<p>No topo ficam o nome do sistema, a indicação de que os dados estão sendo salvos, a data e a hora, o campo de consulta
+por código e o botão de novo produto. Logo abaixo, cinco indicadores resumem o estoque:</p>
+<ul>
+  <li><b>Produtos ativos</b>: a contagem exigida no trabalho, com o número de excluídos e o total de registros;</li>
+  <li><b>Unidades</b>: soma das quantidades de todos os produtos;</li>
+  <li><b>Valor do estoque</b>: soma de quantidade × preço;</li>
+  <li><b>Estoque baixo</b>: produtos no mínimo ou abaixo dele; fica amarelo, ou vermelho se houver produto zerado;</li>
+  <li><b>Validade</b>: produtos vencidos ou que vencem em até 30 dias; fica vermelho se houver vencidos.</li>
+</ul>
+<figure>
+  <img src="img/01-tela-geral.jpg" alt="Tela principal do sistema">
+  <figcaption><b>Figura 1</b> – Tela principal: cabeçalho, indicadores, depósito 3D e painel de alertas.<span class="fonte">Fonte: elaborado pelos autores (2026).</span></figcaption>
+</figure>
+
+<h2>6.2 Tabela de produtos, pesquisa e filtros</h2>
+<p>A aba “Produtos” lista todos os produtos ativos com código, nome, categoria, fornecedor, quantidade (com uma barra que
+compara o estoque com o mínimo), preço, valor total, validade e situação. É possível pesquisar por nome, código ou
+fornecedor, filtrar por categoria ou situação (estoque baixo, sem estoque, vencidos ou vencendo) e ordenar clicando no
+título de qualquer coluna. Cada linha tem botões de <b>entrada (+)</b>, <b>saída (−)</b>, <b>editar</b> e <b>excluir</b>, e um clique
+na linha abre a ficha completa do produto.</p>
+<figure>
+  <img src="img/04-tabela.jpg" alt="Tabela de produtos">
+  <figcaption><b>Figura 2</b> – Lista de produtos com situação, validade e ações.<span class="fonte">Fonte: elaborado pelos autores (2026).</span></figcaption>
+</figure>
+<p>No cadastro, o sistema sugere automaticamente o próximo código livre, não aceita código repetido entre produtos ativos e
+confere cada campo antes de gravar, mostrando a mensagem de erro ao lado do formulário. Na edição o código e a quantidade
+ficam bloqueados: o código identifica o produto, e a quantidade só muda por meio de entradas e saídas, para que todo
+movimento fique registrado no histórico.</p>
+
+<h2>6.3 Entrada e saída de estoque</h2>
+<p>A entrada representa uma compra ou recebimento e soma unidades ao estoque. A saída representa uma venda ou uso e subtrai
+unidades. Antes de confirmar, a janela mostra como ficará o saldo e avisa quando ele ficará abaixo do mínimo. A saída é
+<b>bloqueada</b> se a quantidade pedida for maior do que o estoque disponível, para que o saldo nunca fique negativo. As duas
+operações podem ser feitas pela tabela, pela ficha do produto ou diretamente no depósito 3D.</p>
+
+<h2>6.4 Exclusão lógica, alertas e histórico</h2>
+<p>Assim como no programa em C, excluir um produto apenas muda o seu status para “E”. Ele sai da lista, da contagem e do
+relatório, mas fica guardado na aba “Excluídos”, com a data da exclusão e o botão “Restaurar”. A restauração só é
+permitida se não houver outro produto ativo com o mesmo código.</p>
+<p>O painel de <b>alertas</b> mostra, em ordem de prioridade, os produtos vencidos, zerados, abaixo do mínimo e os que vencem
+nos próximos 30 dias. A aba “Movimentações” guarda o <b>histórico</b> de tudo o que aconteceu (cadastro, entrada, saída,
+edição, exclusão e restauração), com data, hora, quantidade, saldo resultante e observação.</p>
+<figure>
+  <img src="img/05-movimentacoes.jpg" alt="Histórico de movimentações">
+  <figcaption><b>Figura 3</b> – Histórico de movimentações com data, tipo, quantidade e saldo.<span class="fonte">Fonte: elaborado pelos autores (2026).</span></figcaption>
+</figure>
+
+<h2>6.5 Exportação TXT e backup</h2>
+<p>O botão “Exportar relatório TXT” gera o arquivo <code>estoque.txt</code> com todos os produtos ativos ordenados por
+código, incluindo fornecedor, mínimo e validade, e com as marcações <code>[BAIXO]</code>, <code>[VENCIDO]</code> e
+<code>[VENCENDO]</code>. No final aparecem os totais de produtos ativos e excluídos, de unidades e o valor do estoque.</p>
+<p>Como os dados ficam no navegador, o sistema oferece também “Fazer backup”, que salva tudo em um arquivo
+<code>.json</code>, e “Restaurar backup”, que carrega esse arquivo em outro computador ou navegador.</p>
+
+<!-- ================= 7 DEPÓSITO 3D ================= -->
+<h1 class="nova">7 Depósito 3D</h1>
+<p>O depósito 3D foi criado para facilitar a interpretação do estoque: em vez de ler números em uma tabela, o usuário vê
+um galpão com estantes, paletes e caixas, e percebe de imediato o que está cheio, o que está acabando e o que está vencido.
+Ele foi construído com a biblioteca gráfica <b>Three.js</b>, que desenha cenas 3D no navegador usando a placa de vídeo
+(WebGL).</p>
+
+<h2>7.1 Como o galpão é montado</h2>
+<p>O galpão é <b>gerado a partir dos dados</b> sempre que algo muda no estoque:</p>
+<ul>
+  <li>cada <b>categoria</b> vira uma <b>estante porta-paletes</b> (A, B, C…), com três níveis, placa com o nome e uma cor própria;</li>
+  <li>cada <b>produto</b> ocupa um <b>palete</b> na estante da sua categoria, com uma etiqueta mostrando o código;</li>
+  <li>a <b>quantidade de caixas</b> no palete é proporcional ao estoque: com o estoque cheio aparecem até 8 caixas, com
+      pouco estoque aparecem 1 ou 2, e o palete fica vazio quando o produto zera. A referência de “cheio” é o triplo do
+      estoque mínimo;</li>
+  <li>a <b>cor da etiqueta</b> indica a situação: normal, amarela (estoque baixo), vermelha (zerado) ou piscando em
+      vermelho (vencido);</li>
+  <li>as estantes ganham colunas automaticamente quando a categoria tem mais produtos, sempre deixando uma
+      <b>vaga livre (+)</b> para novos cadastros.</li>
+</ul>
+
+<h2>7.2 Interação com os paletes</h2>
+<p>O usuário pode girar a câmera arrastando o mouse, aproximar com a roda e mover com o botão direito. Há também atalhos de
+câmera: “Visão geral”, “De frente”, “De cima” e “Doca”. Ao passar o mouse sobre um palete aparece o nome e a quantidade do
+produto; ao <b>clicar</b>, a câmera se aproxima e abre um painel com a quantidade atual, uma barra comparando com o mínimo e
+os botões <b>Adicionar</b> e <b>Retirar</b>, onde se escolhe quantas unidades movimentar. Clicar em uma <b>vaga livre (+)</b> abre
+o cadastro já com a categoria daquela estante preenchida.</p>
+<figure>
+  <img src="img/02-painel-produto.png" alt="Painel de um produto selecionado no 3D">
+  <figcaption><b>Figura 4</b> – Produto selecionado no depósito 3D, com o painel para adicionar ou retirar unidades.<span class="fonte">Fonte: elaborado pelos autores (2026).</span></figcaption>
+</figure>
+
+<h2>7.3 Empilhadeira e caminhão de entregas</h2>
+<p>Cada movimentação é representada por uma animação logística completa. Os veículos seguem um <b>roteiro de passos</b>
+(andar até um ponto, fazer curva, dar ré, virar, levantar ou baixar o garfo, esperar) executado quadro a quadro, e a
+empilhadeira e o caminhão se sincronizam por sinais: a empilhadeira só entra no caminhão quando ele termina de encostar e
+abrir as portas, e o caminhão só vai embora depois que a carga foi retirada ou colocada.</p>
+<ul>
+  <li><b>Entrada (adicionar ou cadastrar):</b> um caminhão baú chega pela rua, faz a manobra de ré e encosta na doca. A porta
+      do galpão sobe e as portas traseiras do caminhão se abrem. A empilhadeira retira o palete do baú, leva até a estante
+      do produto, levanta o garfo até o nível certo e deixa as caixas, que aparecem no palete. O caminhão fecha as portas e
+      vai embora.</li>
+  <li><b>Saída (retirar):</b> a empilhadeira vai até a estante, retira as caixas, que somem do palete, e leva a carga até a doca,
+      onde um caminhão espera para ser carregado e sair.</li>
+  <li><b>Exclusão:</b> as caixas do produto desaparecem da estante.</li>
+</ul>
+<figure>
+  <img src="img/03-caminhao.jpg" alt="Caminhão de entregas chegando à doca">
+  <figcaption><b>Figura 5</b> – Caminhão de entregas manobrando até a doca, com a empilhadeira aguardando.<span class="fonte">Fonte: elaborado pelos autores (2026).</span></figcaption>
+</figure>
+
+<h2>7.4 Cenário</h2>
+<p>Para deixar a representação mais realista, o cenário inclui elementos ilustrativos de um centro de distribuição. Dentro
+do galpão há piso de concreto, faixas amarelas de circulação, janelas altas, luminárias, um escritório com placa e
+ar-condicionado, um relógio de parede que mostra a hora real, uma bancada de embalagem, paletes de expedição, a vaga
+demarcada da empilhadeira, a área zebrada da doca, extintor, placa de uso de EPI e tambores. Do lado de fora ficam o pátio
+de manobra, uma rua com meio-fio e faixa tracejada, postes de iluminação, um estacionamento com carros e árvores, sob um
+céu de fim de tarde.</p>
+<p>Se o computador estiver sem internet (a biblioteca 3D é carregada da internet) ou sem suporte a gráficos 3D, o sistema
+mostra um aviso no lugar do depósito, e todas as outras funções continuam funcionando normalmente.</p>
+
+<!-- ================= 8 COMO EXECUTAR ================= -->
+<h1 class="nova">8 Como executar</h1>
+<h3>Programa em C</h3>
+<ol>
+  <li>Abrir o arquivo <code>estoque.c</code> no Dev-C++ (ou outra IDE com compilador GCC);</li>
+  <li>Compilar e executar com a tecla <b>F11</b>. Pelo terminal, o comando é <code>gcc estoque.c -o estoque</code>, seguido de
+      <code>estoque</code>;</li>
+  <li>Usar o menu digitando o número da opção. Os arquivos <code>produtos.dat</code> e <code>produtos.txt</code> são criados
+      na mesma pasta do programa.</li>
+</ol>
+<h3>Aplicação visual</h3>
+<ol>
+  <li>Dar dois cliques no arquivo <code>estoque.html</code>; ele abre no navegador padrão (recomendado: Edge ou Chrome);</li>
+  <li>Na primeira vez a lista está vazia: usar “Carregar exemplo” para ver o sistema com 12 produtos de demonstração, ou
+      “+ Novo produto” para começar do zero;</li>
+  <li>Para o depósito 3D é necessário estar conectado à internet na hora de abrir a página.</li>
+</ol>
+
+<!-- ================= 9 TESTES ================= -->
+<h2>9 Testes realizados</h2>
+<table>
+  <caption><b>Tabela 3</b> – Casos de teste executados</caption>
+  <tr><th style="width:42%">Caso de teste</th><th>Resultado obtido</th></tr>
+  <tr><td>Compilar <code>estoque.c</code> com <code>-Wall -Wextra -std=c99 -pedantic</code></td><td>Compilou sem erros e sem avisos.</td></tr>
+  <tr><td>Cadastrar produtos e conferir a contagem no menu</td><td>Contador passou de 0 para 1 e depois para 2.</td></tr>
+  <tr><td>Cadastrar com código já existente</td><td>Recusado com a mensagem “Ja existe um produto ativo com o codigo…”.</td></tr>
+  <tr><td>Digitar letras no campo de quantidade</td><td>Valor recusado e pedido novamente, sem travar.</td></tr>
+  <tr><td>Preço com vírgula (27,90) e com ponto (2.49)</td><td>Os dois formatos foram aceitos corretamente.</td></tr>
+  <tr><td>Consultar código existente e inexistente</td><td>Exibiu todos os dados no primeiro caso e “nao encontrado” no segundo.</td></tr>
+  <tr><td>Excluir produto (exclusão lógica)</td><td>Ativos caiu de 2 para 1 e o total gravado continuou 2; o produto não aparece mais na consulta.</td></tr>
+  <tr><td>Exportar TXT após exclusão</td><td>Relatório gerado só com o produto ativo e com os totais corretos.</td></tr>
+  <tr><td>App visual: dados após recarregar a página</td><td>Todos os produtos e movimentações continuaram salvos.</td></tr>
+  <tr><td>App visual: saída maior que o estoque</td><td>Bloqueada com “Estoque insuficiente”.</td></tr>
+  <tr><td>App visual: excluir e restaurar</td><td>Produto foi para “Excluídos” e voltou à lista ao restaurar.</td></tr>
+  <tr><td>Depósito 3D: adicionar, retirar e cadastrar pela vaga “+”</td><td>Caixas e etiquetas atualizadas; caminhão e empilhadeira executaram a sequência de entrega e de retirada.</td></tr>
+</table>
+
+<!-- ================= 10 CONCLUSÃO ================= -->
+<h2>10 Conclusão</h2>
+<p>O trabalho atingiu o objetivo proposto: o programa em linguagem C implementa todas as funcionalidades obrigatórias,
+armazenando os produtos em um arquivo binário com registros de tamanho fixo, o que permite localizar e alterar um registro
+diretamente pela sua posição. A exclusão lógica por campo de status se mostrou simples e segura, pois preserva a
+integridade do arquivo e mantém o histórico dos dados, e a contagem exibida no menu deixa esse comportamento visível ao
+usuário.</p>
+<p>Durante o desenvolvimento, o grupo praticou conceitos fundamentais da disciplina: estruturas (<code>struct</code>),
+manipulação de arquivos binários e de texto (<code>fopen</code>, <code>fread</code>, <code>fwrite</code>, <code>fseek</code>,
+<code>ftell</code>, <code>fprintf</code>), modularização em funções, laços, decisões e validação de entrada.</p>
+<p>A aplicação com interface visual e o depósito 3D mostram como as mesmas regras podem ser levadas para um sistema mais
+completo e intuitivo, com entradas e saídas, alertas, histórico e uma representação gráfica que facilita entender o
+estado do estoque. Como melhorias futuras, o sistema poderia ganhar controle de usuários, relatórios por período e
+integração com leitor de código de barras.</p>
+
+<!-- ================= REFERÊNCIAS ================= -->
+<h1 class="nova">Referências</h1>
+<p class="ni">DEITEL, P.; DEITEL, H. <b>C: como programar</b>. 6. ed. São Paulo: Pearson Prentice Hall, 2011.</p>
+<p class="ni">KERNIGHAN, B. W.; RITCHIE, D. M. <b>C: a linguagem de programação padrão ANSI</b>. Rio de Janeiro: Campus, 1989.</p>
+<p class="ni">SCHILDT, H. <b>C completo e total</b>. 3. ed. São Paulo: Makron Books, 1997.</p>
+<p class="ni">THREE.JS. <b>Three.js documentation</b>. Disponível em: https://threejs.org/docs/. Acesso em: 12 nov. 2026.</p>
+
+<!-- ================= APÊNDICE ================= -->
+<section class="apendice">
+<h1 class="nova">Apêndice A – Código-fonte completo em C (estoque.c)</h1>
+<pre class="longo">/*
+ * Controle de Estoque de Produtos
+ * --------------------------------
+ * Funcionalidades:
+ *   1 - Cadastrar produto
+ *   2 - Consultar produto por codigo
+ *   3 - Exportar produtos para arquivo texto (TXT)
+ *   4 - Excluir produto (exclusao logica via campo status)
+ *   Contagem de produtos ativos exibida no menu.
+ *
+ * Os registros ficam gravados no arquivo binario "produtos.dat".
+ * Compilar: gcc estoque.c -o estoque
+ */
+
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+
+#define ARQ_DADOS   "produtos.dat"
+#define ARQ_TEXTO   "produtos.txt"
+
+#define STATUS_ATIVO     'A'
+#define STATUS_EXCLUIDO  'E'
+
+typedef struct {
+    int   codigo;
+    char  nome[50];
+    char  categoria[30];
+    int   quantidade;
+    float preco;
+    char  status;      /* 'A' = ativo, 'E' = excluido */
+} Produto;
+
+/* ---------- Funcoes auxiliares de entrada ---------- */
+
+/* Le uma linha do teclado, removendo o '\n' final. */
+void lerTexto(const char *rotulo, char *destino, int tamanho) {
+    for (;;) {
+        printf("%s", rotulo);
+        if (fgets(destino, tamanho, stdin) == NULL) {
+            /* Fim da entrada (Ctrl+Z / Ctrl+D): encerra para nao entrar em laco. */
+            printf("\nEntrada encerrada.\n");
+            exit(0);
+        }
+        if (strchr(destino, '\n') == NULL) {
+            /* Linha maior que o buffer: descarta o restante. */
+            int c;
+            while ((c = getchar()) != '\n' &amp;&amp; c != EOF) { }
+        } else {
+            destino[strcspn(destino, "\r\n")] = '\0';
+        }
+        if (destino[0] != '\0') return;
+        printf("  Valor obrigatorio.\n");
+    }
+}
+
+/* Le um inteiro validado (&gt;= minimo). */
+int lerInteiro(const char *rotulo, int minimo) {
+    char buf[64];
+    char *fim;
+    long valor;
+    for (;;) {
+        lerTexto(rotulo, buf, sizeof buf);
+        valor = strtol(buf, &amp;fim, 10);
+        if (*fim == '\0' &amp;&amp; valor &gt;= minimo) return (int)valor;
+        printf("  Valor invalido. Informe um numero inteiro &gt;= %d.\n", minimo);
+    }
+}
+
+/* Le um numero real validado (&gt;= 0). Aceita virgula ou ponto. */
+float lerReal(const char *rotulo) {
+    char buf[64];
+    char *fim, *p;
+    double valor;
+    for (;;) {
+        lerTexto(rotulo, buf, sizeof buf);
+        for (p = buf; *p; p++) if (*p == ',') *p = '.';
+        valor = strtod(buf, &amp;fim);
+        if (*fim == '\0' &amp;&amp; valor &gt;= 0) return (float)valor;
+        printf("  Valor invalido. Informe um numero &gt;= 0 (ex.: 12.50).\n");
+    }
+}
+
+void pausar(void) {
+    int c;
+    printf("\nPressione ENTER para continuar...");
+    while ((c = getchar()) != '\n' &amp;&amp; c != EOF) { }
+}
+
+/* ---------- Acesso ao arquivo binario ---------- */
+
+/* Abre o arquivo de dados para leitura/escrita, criando-o se nao existir. */
+FILE *abrirArquivo(void) {
+    FILE *fp = fopen(ARQ_DADOS, "rb+");
+    if (fp == NULL) fp = fopen(ARQ_DADOS, "wb+");
+    if (fp == NULL) {
+        printf("Erro: nao foi possivel abrir o arquivo %s.\n", ARQ_DADOS);
+    }
+    return fp;
+}
+
+/*
+ * Procura um produto ATIVO pelo codigo.
+ * Retorna a posicao (indice do registro) ou -1 se nao encontrado.
+ * Se 'saida' nao for NULL, copia o registro encontrado.
+ */
+long buscarPorCodigo(FILE *fp, int codigo, Produto *saida) {
+    Produto p;
+    long pos = 0;
+    rewind(fp);
+    while (fread(&amp;p, sizeof(Produto), 1, fp) == 1) {
+        if (p.status == STATUS_ATIVO &amp;&amp; p.codigo == codigo) {
+            if (saida != NULL) *saida = p;
+            return pos;
+        }
+        pos++;
+    }
+    return -1;
+}
+
+/* Conta os registros com status ativo. */
+int contarAtivos(void) {
+    FILE *fp = fopen(ARQ_DADOS, "rb");
+    Produto p;
+    int total = 0;
+    if (fp == NULL) return 0;
+    while (fread(&amp;p, sizeof(Produto), 1, fp) == 1) {
+        if (p.status == STATUS_ATIVO) total++;
+    }
+    fclose(fp);
+    return total;
+}
+
+/* Conta todos os registros gravados (ativos + excluidos). */
+int contarTotalGravados(void) {
+    FILE *fp = fopen(ARQ_DADOS, "rb");
+    long tamanho;
+    if (fp == NULL) return 0;
+    fseek(fp, 0, SEEK_END);
+    tamanho = ftell(fp);
+    fclose(fp);
+    return (int)(tamanho / (long)sizeof(Produto));
+}
+
+void exibirProduto(const Produto *p) {
+    printf("----------------------------------------\n");
+    printf("Codigo     : %d\n", p-&gt;codigo);
+    printf("Nome       : %s\n", p-&gt;nome);
+    printf("Categoria  : %s\n", p-&gt;categoria);
+    printf("Quantidade : %d\n", p-&gt;quantidade);
+    printf("Preco unit.: R$ %.2f\n", p-&gt;preco);
+    printf("Valor total: R$ %.2f\n", p-&gt;quantidade * p-&gt;preco);
+    printf("----------------------------------------\n");
+}
+
+/* ---------- Funcionalidades ---------- */
+
+void cadastrarProduto(void) {
+    FILE *fp;
+    Produto p;
+
+    printf("\n=== CADASTRAR PRODUTO ===\n");
+    fp = abrirArquivo();
+    if (fp == NULL) return;
+
+    memset(&amp;p, 0, sizeof p);
+    p.codigo = lerInteiro("Codigo: ", 1);
+
+    if (buscarPorCodigo(fp, p.codigo, NULL) != -1) {
+        printf("Ja existe um produto ativo com o codigo %d.\n", p.codigo);
+        fclose(fp);
+        return;
+    }
+
+    lerTexto("Nome: ", p.nome, sizeof p.nome);
+    lerTexto("Categoria: ", p.categoria, sizeof p.categoria);
+    p.quantidade = lerInteiro("Quantidade em estoque: ", 0);
+    p.preco = lerReal("Preco unitario (R$): ");
+    p.status = STATUS_ATIVO;
+
+    fseek(fp, 0, SEEK_END);
+    if (fwrite(&amp;p, sizeof(Produto), 1, fp) == 1) {
+        printf("Produto cadastrado com sucesso!\n");
+    } else {
+        printf("Erro ao gravar o produto.\n");
+    }
+    fclose(fp);
+}
+
+void consultarProduto(void) {
+    FILE *fp;
+    Produto p;
+    int codigo;
+
+    printf("\n=== CONSULTAR PRODUTO POR CODIGO ===\n");
+    fp = fopen(ARQ_DADOS, "rb");
+    if (fp == NULL) {
+        printf("Nenhum produto cadastrado.\n");
+        return;
+    }
+
+    codigo = lerInteiro("Codigo: ", 1);
+    if (buscarPorCodigo(fp, codigo, &amp;p) != -1) {
+        exibirProduto(&amp;p);
+    } else {
+        printf("Produto com codigo %d nao encontrado.\n", codigo);
+    }
+    fclose(fp);
+}
+
+void exportarTxt(void) {
+    FILE *fp, *txt;
+    Produto p;
+    int qtd = 0;
+    float valorEstoque = 0;
+
+    printf("\n=== EXPORTAR PARA TXT ===\n");
+    fp = fopen(ARQ_DADOS, "rb");
+    if (fp == NULL) {
+        printf("Nenhum produto cadastrado.\n");
+        return;
+    }
+    txt = fopen(ARQ_TEXTO, "w");
+    if (txt == NULL) {
+        printf("Erro: nao foi possivel criar %s.\n", ARQ_TEXTO);
+        fclose(fp);
+        return;
+    }
+
+    fprintf(txt, "RELATORIO DE ESTOQUE DE PRODUTOS\n");
+    fprintf(txt, "==================================================================================\n");
+    fprintf(txt, "%-8s %-30s %-20s %8s %12s\n", "CODIGO", "NOME", "CATEGORIA", "QTD", "PRECO (R$)");
+    fprintf(txt, "----------------------------------------------------------------------------------\n");
+
+    while (fread(&amp;p, sizeof(Produto), 1, fp) == 1) {
+        if (p.status != STATUS_ATIVO) continue;
+        fprintf(txt, "%-8d %-30.30s %-20.20s %8d %12.2f\n",
+                p.codigo, p.nome, p.categoria, p.quantidade, p.preco);
+        valorEstoque += p.quantidade * p.preco;
+        qtd++;
+    }
+
+    fprintf(txt, "----------------------------------------------------------------------------------\n");
+    fprintf(txt, "Total de produtos ativos: %d\n", qtd);
+    fprintf(txt, "Valor total em estoque : R$ %.2f\n", valorEstoque);
+
+    fclose(txt);
+    fclose(fp);
+    printf("%d produto(s) exportado(s) para o arquivo \"%s\".\n", qtd, ARQ_TEXTO);
+}
+
+void excluirProduto(void) {
+    FILE *fp;
+    Produto p;
+    long pos;
+    int codigo;
+    char resp[8];
+
+    printf("\n=== EXCLUIR PRODUTO ===\n");
+    fp = fopen(ARQ_DADOS, "rb+");
+    if (fp == NULL) {
+        printf("Nenhum produto cadastrado.\n");
+        return;
+    }
+
+    codigo = lerInteiro("Codigo do produto a excluir: ", 1);
+    pos = buscarPorCodigo(fp, codigo, &amp;p);
+    if (pos == -1) {
+        printf("Produto com codigo %d nao encontrado.\n", codigo);
+        fclose(fp);
+        return;
+    }
+
+    exibirProduto(&amp;p);
+    lerTexto("Confirma a exclusao? (S/N): ", resp, sizeof resp);
+    if (resp[0] != 'S' &amp;&amp; resp[0] != 's') {
+        printf("Exclusao cancelada.\n");
+        fclose(fp);
+        return;
+    }
+
+    /* Exclusao logica: apenas marca o status e regrava o registro no mesmo lugar. */
+    p.status = STATUS_EXCLUIDO;
+    fseek(fp, pos * (long)sizeof(Produto), SEEK_SET);
+    if (fwrite(&amp;p, sizeof(Produto), 1, fp) == 1) {
+        printf("Produto excluido com sucesso.\n");
+    } else {
+        printf("Erro ao excluir o produto.\n");
+    }
+    fclose(fp);
+}
+
+/* ---------- Menu principal ---------- */
+
+int main(void) {
+    int opcao;
+
+    do {
+        printf("\n==========================================\n");
+        printf("      CONTROLE DE ESTOQUE DE PRODUTOS\n");
+        printf("==========================================\n");
+        printf(" Produtos ativos: %d  (gravados no arquivo: %d)\n",
+               contarAtivos(), contarTotalGravados());
+        printf("------------------------------------------\n");
+        printf(" 1 - Cadastrar produto\n");
+        printf(" 2 - Consultar produto por codigo\n");
+        printf(" 3 - Exportar produtos para TXT\n");
+        printf(" 4 - Excluir produto\n");
+        printf(" 0 - Sair\n");
+        printf("==========================================\n");
+        opcao = lerInteiro("Opcao: ", 0);
+
+        switch (opcao) {
+            case 1: cadastrarProduto(); pausar(); break;
+            case 2: consultarProduto(); pausar(); break;
+            case 3: exportarTxt();      pausar(); break;
+            case 4: excluirProduto();   pausar(); break;
+            case 0: printf("Encerrando o sistema...\n"); break;
+            default: printf("Opcao invalida.\n");
+        }
+    } while (opcao != 0);
+
+    return 0;
+}</pre>
+</section>
+
+</body>
+</html>
