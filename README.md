@@ -34,7 +34,7 @@ No Dev-C++, também dá para abrir o `estoque.c` e apertar **F11** (compilar e e
 
 ## Versão visual (`estoque.html`)
 
-**Versão online:** https://luizprestes-ops.github.io/controle-estoque/
+**Versão online:** https://codestorm-dev.github.io/codestorm.dev/
 
 Também dá para baixar e abrir o arquivo direto no navegador, sem instalar nada. Além do que o programa em C faz, ela tem:
 
