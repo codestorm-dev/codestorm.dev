@@ -34,7 +34,9 @@ No Dev-C++, também dá para abrir o `estoque.c` e apertar **F11** (compilar e e
 
 ## Versão visual (`estoque.html`)
 
-É só abrir o arquivo no navegador, sem instalar nada. Além do que o programa em C faz, ela tem:
+**Versão online:** https://luizprestes-ops.github.io/controle-estoque/
+
+Também dá para baixar e abrir o arquivo direto no navegador, sem instalar nada. Além do que o programa em C faz, ela tem:
 
 - entrada e saída de mercadoria, com histórico de movimentações;
 - estoque mínimo e alertas de reposição;
